@@ -37,22 +37,41 @@ const nombresMeses = [
     "Diciembre"
 ];
 
+/* =========================
+   GUARDAR Y CARGAR DATOS
+   ========================= */
+
 function guardarDatos() {
-    localStorage.setItem("horarios", JSON.stringify(horarios));
+    localStorage.setItem(
+        "horarios_copia",
+        JSON.stringify(horarios)
+    );
 }
 
 function cargarDatos() {
-    const datos = localStorage.getItem("horarios");
+    const datos =
+        localStorage.getItem("horarios_copia");
 
     if (datos) {
+
         try {
+
             horarios = JSON.parse(datos);
 
-            if (!horarios.A) horarios.A = [];
-            if (!horarios.B) horarios.B = [];
+            if (!horarios.A) {
+                horarios.A = [];
+            }
+
+            if (!horarios.B) {
+                horarios.B = [];
+            }
 
         } catch (error) {
-            console.error("Error al cargar los horarios:", error);
+
+            console.error(
+                "Error al cargar los horarios:",
+                error
+            );
 
             horarios = {
                 A: [],
@@ -62,7 +81,10 @@ function cargarDatos() {
     }
 }
 
-/* Obtener los eventos que se deben mostrar */
+/* =========================
+   OBTENER EVENTOS
+   ========================= */
+
 function obtenerEventos() {
 
     if (horarioActual === "AMBOS") {
@@ -78,11 +100,14 @@ function obtenerEventos() {
                 horarioOrigen: "B"
             }))
         ];
-
     }
 
     return horarios[horarioActual];
 }
+
+/* =========================
+   MOSTRAR CALENDARIO
+   ========================= */
 
 function mostrarCalendario() {
 
@@ -93,14 +118,22 @@ function mostrarCalendario() {
     }
 }
 
+/* =========================
+   VISTA SEMANAL
+   ========================= */
+
 function mostrarSemana() {
 
     calendario.innerHTML = "";
 
-    tituloCalendario.textContent = "Horario semanal";
+    tituloCalendario.textContent =
+        "Horario semanal";
 
-    const contenedor = document.createElement("div");
-    contenedor.className = "calendario-semana";
+    const contenedor =
+        document.createElement("div");
+
+    contenedor.className =
+        "calendario-semana";
 
     const hoy = new Date();
     const diaActual = hoy.getDay();
@@ -108,49 +141,91 @@ function mostrarSemana() {
     let lunes = new Date(hoy);
 
     if (diaActual === 0) {
-        lunes.setDate(hoy.getDate() - 6);
+
+        lunes.setDate(
+            hoy.getDate() - 6
+        );
+
     } else {
-        lunes.setDate(hoy.getDate() - (diaActual - 1));
+
+        lunes.setDate(
+            hoy.getDate() -
+            (diaActual - 1)
+        );
     }
 
     for (let dia = 1; dia <= 7; dia++) {
 
-        const columna = document.createElement("div");
+        const columna =
+            document.createElement("div");
+
         columna.className = "dia";
 
-        const fechaDia = new Date(lunes);
-        fechaDia.setDate(lunes.getDate() + dia - 1);
+        const fechaDia =
+            new Date(lunes);
+
+        fechaDia.setDate(
+            lunes.getDate() + dia - 1
+        );
 
         const fechaTexto =
-            fechaDia.toISOString().split("T")[0];
+            fechaDia
+                .toISOString()
+                .split("T")[0];
 
-        const nombre = document.createElement("div");
-        nombre.className = "nombre-dia";
+        const nombre =
+            document.createElement("div");
+
+        nombre.className =
+            "nombre-dia";
 
         nombre.textContent =
             `${nombresDias[fechaDia.getDay()]} ${fechaDia.getDate()}/${fechaDia.getMonth() + 1}`;
 
-        const eventos = document.createElement("div");
-        eventos.className = "eventos";
+        const eventos =
+            document.createElement("div");
+
+        eventos.className =
+            "eventos";
 
         const eventosDia =
             obtenerEventos()
-                .filter(evento => evento.fecha === fechaTexto);
+                .filter(evento =>
+                    evento.fecha === fechaTexto
+                );
 
         eventosDia.sort((a, b) => {
 
-            if (a.todoElDia && !b.todoElDia) return -1;
-            if (!a.todoElDia && b.todoElDia) return 1;
+            if (
+                a.todoElDia &&
+                !b.todoElDia
+            ) {
+                return -1;
+            }
 
-            return (a.inicio || "").localeCompare(b.inicio || "");
+            if (
+                !a.todoElDia &&
+                b.todoElDia
+            ) {
+                return 1;
+            }
+
+            return (a.inicio || "")
+                .localeCompare(
+                    b.inicio || ""
+                );
         });
 
         eventosDia.forEach(evento => {
 
-            const elemento = document.createElement("div");
+            const elemento =
+                document.createElement("div");
 
-            elemento.className = "evento";
-            elemento.style.background = evento.color;
+            elemento.className =
+                "evento";
+
+            elemento.style.background =
+                evento.color;
 
             const creador =
                 evento.horarioOrigen === "A"
@@ -189,18 +264,28 @@ function mostrarSemana() {
     calendario.appendChild(contenedor);
 }
 
+/* =========================
+   VISTA MENSUAL
+   ========================= */
+
 function mostrarMes() {
 
     calendario.innerHTML = "";
 
-    const año = fechaActual.getFullYear();
-    const mes = fechaActual.getMonth();
+    const año =
+        fechaActual.getFullYear();
+
+    const mes =
+        fechaActual.getMonth();
 
     tituloCalendario.textContent =
         `${nombresMeses[mes]} ${año}`;
 
-    const contenedor = document.createElement("div");
-    contenedor.className = "calendario-mes";
+    const contenedor =
+        document.createElement("div");
+
+    contenedor.className =
+        "calendario-mes";
 
     const diasSemana = [
         "Lunes",
@@ -214,54 +299,81 @@ function mostrarMes() {
 
     diasSemana.forEach(dia => {
 
-        const elemento = document.createElement("div");
+        const elemento =
+            document.createElement("div");
 
-        elemento.className = "cabecera-mes";
-        elemento.textContent = dia;
+        elemento.className =
+            "cabecera-mes";
+
+        elemento.textContent =
+            dia;
 
         contenedor.appendChild(elemento);
     });
 
     let primerDia =
-        new Date(año, mes, 1).getDay();
+        new Date(
+            año,
+            mes,
+            1
+        ).getDay();
 
     if (primerDia === 0) {
         primerDia = 7;
     }
 
     const diasMes =
-        new Date(año, mes + 1, 0).getDate();
+        new Date(
+            año,
+            mes + 1,
+            0
+        ).getDate();
 
-    for (let i = 1; i < primerDia; i++) {
+    for (
+        let i = 1;
+        i < primerDia;
+        i++
+    ) {
 
         const vacio =
             document.createElement("div");
 
-        vacio.className = "dia-mes";
+        vacio.className =
+            "dia-mes";
 
         contenedor.appendChild(vacio);
     }
 
-    for (let dia = 1; dia <= diasMes; dia++) {
+    for (
+        let dia = 1;
+        dia <= diasMes;
+        dia++
+    ) {
 
         const elemento =
             document.createElement("div");
 
-        elemento.className = "dia-mes";
+        elemento.className =
+            "dia-mes";
 
         const numero =
             document.createElement("div");
 
-        numero.className = "numero-dia";
-        numero.textContent = dia;
+        numero.className =
+            "numero-dia";
+
+        numero.textContent =
+            dia;
 
         elemento.appendChild(numero);
 
         const mesTexto =
-            String(mes + 1).padStart(2, "0");
+            String(mes + 1)
+                .padStart(2, "0");
 
         const diaTexto =
-            String(dia).padStart(2, "0");
+            String(dia)
+                .padStart(2, "0");
 
         const fechaTexto =
             `${año}-${mesTexto}-${diaTexto}`;
@@ -274,10 +386,24 @@ function mostrarMes() {
 
         eventosDia.sort((a, b) => {
 
-            if (a.todoElDia && !b.todoElDia) return -1;
-            if (!a.todoElDia && b.todoElDia) return 1;
+            if (
+                a.todoElDia &&
+                !b.todoElDia
+            ) {
+                return -1;
+            }
 
-            return (a.inicio || "").localeCompare(b.inicio || "");
+            if (
+                !a.todoElDia &&
+                b.todoElDia
+            ) {
+                return 1;
+            }
+
+            return (a.inicio || "")
+                .localeCompare(
+                    b.inicio || ""
+                );
         });
 
         eventosDia.forEach(evento => {
@@ -309,7 +435,9 @@ function mostrarMes() {
             eventoElemento.onclick = () =>
                 editarEvento(evento);
 
-            elemento.appendChild(eventoElemento);
+            elemento.appendChild(
+                eventoElemento
+            );
         });
 
         contenedor.appendChild(elemento);
@@ -318,16 +446,26 @@ function mostrarMes() {
     calendario.appendChild(contenedor);
 }
 
+/* =========================
+   TODO EL DÍA
+   ========================= */
+
 function actualizarHoras() {
 
     const todoElDia =
-        document.getElementById("todoElDia");
+        document.getElementById(
+            "todoElDia"
+        );
 
     const horaInicio =
-        document.getElementById("horaInicio");
+        document.getElementById(
+            "horaInicio"
+        );
 
     const horaFin =
-        document.getElementById("horaFin");
+        document.getElementById(
+            "horaFin"
+        );
 
     if (todoElDia.checked) {
 
@@ -344,6 +482,10 @@ function actualizarHoras() {
     }
 }
 
+/* =========================
+   ABRIR MODAL
+   ========================= */
+
 function abrirModal() {
 
     if (horarioActual === "AMBOS") {
@@ -357,114 +499,182 @@ function abrirModal() {
 
     eventoEditando = null;
 
-    document.getElementById("tituloModal").textContent =
+    document.getElementById(
+        "tituloModal"
+    ).textContent =
         "Añadir evento";
 
-    document.getElementById("nombreEvento").value = "";
+    document.getElementById(
+        "nombreEvento"
+    ).value = "";
 
-    document.getElementById("fechaEvento").value = "";
+    document.getElementById(
+        "fechaEvento"
+    ).value = "";
 
-    document.getElementById("horaInicio").value = "";
+    document.getElementById(
+        "horaInicio"
+    ).value = "";
 
-    document.getElementById("horaFin").value = "";
+    document.getElementById(
+        "horaFin"
+    ).value = "";
 
-    document.getElementById("todoElDia").checked = false;
+    document.getElementById(
+        "todoElDia"
+    ).checked = false;
 
-    document.getElementById("colorEvento").value =
+    document.getElementById(
+        "colorEvento"
+    ).value =
         "#6366f1";
 
-    document.getElementById("botonEliminar").style.display =
+    document.getElementById(
+        "botonEliminar"
+    ).style.display =
         "none";
 
     actualizarHoras();
 
-    modal.classList.remove("oculto");
+    modal.classList.remove(
+        "oculto"
+    );
 }
+
+/* =========================
+   CERRAR MODAL
+   ========================= */
 
 function cerrarModal() {
 
-    modal.classList.add("oculto");
+    modal.classList.add(
+        "oculto"
+    );
 
     eventoEditando = null;
 }
+
+/* =========================
+   EDITAR EVENTO
+   ========================= */
 
 function editarEvento(evento) {
 
     eventoEditando = {
         id: evento.id,
-        horarioOrigen: evento.horarioOrigen || horarioActual
+        horarioOrigen:
+            evento.horarioOrigen ||
+            horarioActual
     };
 
-    document.getElementById("tituloModal").textContent =
+    document.getElementById(
+        "tituloModal"
+    ).textContent =
         "Editar evento";
 
-    document.getElementById("nombreEvento").value =
+    document.getElementById(
+        "nombreEvento"
+    ).value =
         evento.nombre;
 
-    document.getElementById("fechaEvento").value =
+    document.getElementById(
+        "fechaEvento"
+    ).value =
         evento.fecha || "";
 
-    document.getElementById("horaInicio").value =
+    document.getElementById(
+        "horaInicio"
+    ).value =
         evento.inicio || "";
 
-    document.getElementById("horaFin").value =
+    document.getElementById(
+        "horaFin"
+    ).value =
         evento.fin || "";
 
-    document.getElementById("todoElDia").checked =
+    document.getElementById(
+        "todoElDia"
+    ).checked =
         evento.todoElDia === true;
 
-    document.getElementById("colorEvento").value =
+    document.getElementById(
+        "colorEvento"
+    ).value =
         evento.color;
 
-    document.getElementById("botonEliminar").style.display =
+    document.getElementById(
+        "botonEliminar"
+    ).style.display =
         "block";
 
     actualizarHoras();
 
-    modal.classList.remove("oculto");
+    modal.classList.remove(
+        "oculto"
+    );
 }
+
+/* =========================
+   GUARDAR EVENTO
+   ========================= */
 
 function guardarEvento() {
 
     const nombre =
-        document.getElementById("nombreEvento")
-            .value.trim();
+        document.getElementById(
+            "nombreEvento"
+        ).value.trim();
 
     const fecha =
-        document.getElementById("fechaEvento")
-            .value;
+        document.getElementById(
+            "fechaEvento"
+        ).value;
 
     const todoElDia =
-        document.getElementById("todoElDia")
-            .checked;
+        document.getElementById(
+            "todoElDia"
+        ).checked;
 
     const inicio =
-        document.getElementById("horaInicio")
-            .value;
+        document.getElementById(
+            "horaInicio"
+        ).value;
 
     const fin =
-        document.getElementById("horaFin")
-            .value;
+        document.getElementById(
+            "horaFin"
+        ).value;
 
     const color =
-        document.getElementById("colorEvento")
-            .value;
+        document.getElementById(
+            "colorEvento"
+        ).value;
 
     if (!nombre || !fecha) {
 
-        alert("Completa todos los campos.");
+        alert(
+            "Completa todos los campos."
+        );
 
         return;
     }
 
-    if (!todoElDia && (!inicio || !fin)) {
+    if (
+        !todoElDia &&
+        (!inicio || !fin)
+    ) {
 
-        alert("Completa las horas.");
+        alert(
+            "Completa las horas."
+        );
 
         return;
     }
 
-    if (!todoElDia && inicio >= fin) {
+    if (
+        !todoElDia &&
+        inicio >= fin
+    ) {
 
         alert(
             "La hora de finalización debe ser posterior."
@@ -483,17 +693,33 @@ function guardarEvento() {
 
         const evento =
             eventos.find(e =>
-                e.id === eventoEditando.id
+                e.id ===
+                eventoEditando.id
             );
 
         if (evento) {
 
-            evento.nombre = nombre;
-            evento.fecha = fecha;
-            evento.inicio = todoElDia ? "" : inicio;
-            evento.fin = todoElDia ? "" : fin;
-            evento.todoElDia = todoElDia;
-            evento.color = color;
+            evento.nombre =
+                nombre;
+
+            evento.fecha =
+                fecha;
+
+            evento.inicio =
+                todoElDia
+                    ? ""
+                    : inicio;
+
+            evento.fin =
+                todoElDia
+                    ? ""
+                    : fin;
+
+            evento.todoElDia =
+                todoElDia;
+
+            evento.color =
+                color;
         }
 
     } else {
@@ -506,11 +732,18 @@ function guardarEvento() {
 
             fecha: fecha,
 
-            inicio: todoElDia ? "" : inicio,
+            inicio:
+                todoElDia
+                    ? ""
+                    : inicio,
 
-            fin: todoElDia ? "" : fin,
+            fin:
+                todoElDia
+                    ? ""
+                    : fin,
 
-            todoElDia: todoElDia,
+            todoElDia:
+                todoElDia,
 
             color: color
         });
@@ -522,6 +755,10 @@ function guardarEvento() {
 
     mostrarCalendario();
 }
+
+/* =========================
+   ELIMINAR EVENTO
+   ========================= */
 
 function eliminarEvento() {
 
@@ -546,7 +783,8 @@ function eliminarEvento() {
 
     horarios[origen] =
         eventos.filter(evento =>
-            evento.id !== eventoEditando.id
+            evento.id !==
+            eventoEditando.id
         );
 
     guardarDatos();
@@ -556,77 +794,111 @@ function eliminarEvento() {
     mostrarCalendario();
 }
 
-/* Selector de horarios */
+/* =========================
+   SELECTOR DE HORARIOS
+   ========================= */
 
-document.getElementById("horarioA").onclick = () => {
+document.getElementById(
+    "horarioA"
+).onclick = () => {
 
     horarioActual = "A";
 
     mostrarCalendario();
 };
 
-document.getElementById("horarioB").onclick = () => {
+document.getElementById(
+    "horarioB"
+).onclick = () => {
 
     horarioActual = "B";
 
     mostrarCalendario();
 };
 
-document.getElementById("horarioAmbos").onclick = () => {
+document.getElementById(
+    "horarioAmbos"
+).onclick = () => {
 
     horarioActual = "AMBOS";
 
     mostrarCalendario();
 };
 
-/* Vistas */
+/* =========================
+   VISTAS
+   ========================= */
 
-document.getElementById("vistaSemana").onclick = () => {
+document.getElementById(
+    "vistaSemana"
+).onclick = () => {
 
     vistaActual = "semana";
 
-    document.getElementById("vistaSemana")
-        .classList.add("active");
+    document.getElementById(
+        "vistaSemana"
+    ).classList.add("active");
 
-    document.getElementById("vistaMes")
-        .classList.remove("active");
+    document.getElementById(
+        "vistaMes"
+    ).classList.remove("active");
 
     mostrarCalendario();
 };
 
-document.getElementById("vistaMes").onclick = () => {
+document.getElementById(
+    "vistaMes"
+).onclick = () => {
 
     vistaActual = "mes";
 
-    document.getElementById("vistaMes")
-        .classList.add("active");
+    document.getElementById(
+        "vistaMes"
+    ).classList.add("active");
 
-    document.getElementById("vistaSemana")
-        .classList.remove("active");
+    document.getElementById(
+        "vistaSemana"
+    ).classList.remove("active");
 
     mostrarCalendario();
 };
 
-/* Modal */
+/* =========================
+   MODAL
+   ========================= */
 
-document.getElementById("btnAnadirEvento").onclick =
+document.getElementById(
+    "btnAnadirEvento"
+).onclick =
     abrirModal;
 
-document.getElementById("cancelarEvento").onclick =
+document.getElementById(
+    "cancelarEvento"
+).onclick =
     cerrarModal;
 
-document.getElementById("guardarEvento").onclick =
+document.getElementById(
+    "guardarEvento"
+).onclick =
     guardarEvento;
 
-document.getElementById("botonEliminar").onclick =
+document.getElementById(
+    "botonEliminar"
+).onclick =
     eliminarEvento;
 
-document.getElementById("todoElDia").onchange =
+document.getElementById(
+    "todoElDia"
+).onchange =
     actualizarHoras;
 
-/* Navegación del mes */
+/* =========================
+   NAVEGACIÓN DEL MES
+   ========================= */
 
-document.getElementById("mesAnterior").onclick = () => {
+document.getElementById(
+    "mesAnterior"
+).onclick = () => {
 
     fechaActual.setMonth(
         fechaActual.getMonth() - 1
@@ -635,7 +907,9 @@ document.getElementById("mesAnterior").onclick = () => {
     mostrarCalendario();
 };
 
-document.getElementById("mesSiguiente").onclick = () => {
+document.getElementById(
+    "mesSiguiente"
+).onclick = () => {
 
     fechaActual.setMonth(
         fechaActual.getMonth() + 1
@@ -644,5 +918,10 @@ document.getElementById("mesSiguiente").onclick = () => {
     mostrarCalendario();
 };
 
+/* =========================
+   INICIO
+   ========================= */
+
 cargarDatos();
+
 mostrarCalendario();
