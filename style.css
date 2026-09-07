@@ -132,6 +132,7 @@ main {
     margin-bottom: 8px;
     cursor: grab;
     font-size: 14px;
+    touch-action: pan-y;
 }
 
 .evento:active {
@@ -181,6 +182,7 @@ main {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    touch-action: pan-y;
 }
 
 .evento-mes:active {
@@ -200,6 +202,17 @@ main {
 
 .arrastrando {
     opacity: 0.5;
+}
+
+.fantasma-arrastre {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 100000;
+    opacity: 0.92;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, -50%) scale(1.03);
 }
 
 
