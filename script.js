@@ -561,26 +561,46 @@ function mostrarCalendario() {
    ADJUNTAR EVENTOS A UN ELEMENTO ARRASTRABLE
    ========================= */
 
+const esDispositivoTactil =
+    ("ontouchstart" in window) ||
+    (navigator.maxTouchPoints > 0);
+
+
 function hacerArrastrable(elemento, evento) {
 
-    elemento.draggable = true;
+    if (!esDispositivoTactil) {
 
-    elemento.addEventListener("dragstart", function (e) {
-        iniciarArrastre(e, evento, elemento);
-    });
+        /*
+         * En Firefox para Android, un elemento con
+         * draggable="true" activa el arrastre nativo
+         * del navegador al tocarlo, que "roba" el toque
+         * antes de que nuestro propio código táctil
+         * pueda reaccionar. Por eso el arrastre HTML5
+         * (ratón) solo se activa en dispositivos que
+         * no son táctiles.
+         */
 
-    elemento.addEventListener("dragend", function () {
-        terminarArrastre(elemento);
-    });
+        elemento.draggable = true;
 
-    elemento.addEventListener("click", function () {
+        elemento.addEventListener("dragstart", function (e) {
+            iniciarArrastre(e, evento, elemento);
+        });
 
-        if (arrastreRealizado) {
-            return;
-        }
+        elemento.addEventListener("dragend", function () {
+            terminarArrastre(elemento);
+        });
 
-        editarEvento(evento);
-    });
+        elemento.addEventListener("click", function () {
+
+            if (arrastreRealizado) {
+                return;
+            }
+
+            editarEvento(evento);
+        });
+
+        return;
+    }
 
     elemento.addEventListener(
         "touchstart",
