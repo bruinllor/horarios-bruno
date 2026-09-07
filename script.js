@@ -75,10 +75,6 @@ function cargarDatos() {
         const datosCargados =
             JSON.parse(datos);
 
-        /*
-         * Por si existieran datos antiguos
-         * guardados como A/B.
-         */
         if (
             datosCargados &&
             !Array.isArray(datosCargados) &&
@@ -113,7 +109,7 @@ function cargarDatos() {
 
 
 /* =========================
-   ARRASTRAR EVENTOS
+   ARRASTRAR EVENTOS (RATÓN / HTML5)
    ========================= */
 
 function iniciarArrastre(e, evento, elemento) {
@@ -124,12 +120,9 @@ function iniciarArrastre(e, evento, elemento) {
 
     arrastreRealizado = true;
 
-    elemento.classList.add(
-        "arrastrando"
-    );
+    elemento.classList.add("arrastrando");
 
-    e.dataTransfer.effectAllowed =
-        "copyMove";
+    e.dataTransfer.effectAllowed = "copyMove";
 
     e.dataTransfer.setData(
         "text/plain",
@@ -140,9 +133,7 @@ function iniciarArrastre(e, evento, elemento) {
 
 function terminarArrastre(elemento) {
 
-    elemento.classList.remove(
-        "arrastrando"
-    );
+    elemento.classList.remove("arrastrando");
 
     setTimeout(() => {
 
@@ -156,20 +147,15 @@ function permitirSoltar(e) {
 
     e.preventDefault();
 
-    e.currentTarget.classList.add(
-        "dia-destino"
-    );
+    e.currentTarget.classList.add("dia-destino");
 
-    e.dataTransfer.dropEffect =
-        "move";
+    e.dataTransfer.dropEffect = "move";
 }
 
 
 function salirZonaSoltar(e) {
 
-    e.currentTarget.classList.remove(
-        "dia-destino"
-    );
+    e.currentTarget.classList.remove("dia-destino");
 }
 
 
@@ -177,37 +163,258 @@ function soltarEvento(e, nuevaFecha) {
 
     e.preventDefault();
 
-    e.currentTarget.classList.remove(
-        "dia-destino"
-    );
+    e.currentTarget.classList.remove("dia-destino");
 
     if (!eventoArrastrado) {
         return;
     }
 
-    const id =
-        eventoArrastrado.id;
+    const id = eventoArrastrado.id;
 
-    const eventoOriginal =
-        horarios.find(
-            evento =>
-                String(evento.id) ===
-                String(id)
-        );
+    eventoArrastrado = null;
 
-    if (!eventoOriginal) {
+    manejarSoltarEvento(id, nuevaFecha);
+}
 
-        eventoArrastrado = null;
+
+/* =========================
+   ARRASTRAR EVENTOS (TÁCTIL / MÓVIL)
+   ========================= */
+
+const UMBRAL_MOVIMIENTO = 10;
+const RETARDO_PULSACION = 300;
+
+let toqueArrastre = null;
+
+
+function iniciarToqueEvento(e, evento, elemento) {
+
+    if (e.touches.length !== 1) {
+        return;
+    }
+
+    const toque = e.touches[0];
+
+    toqueArrastre = {
+        evento: evento,
+        elementoOriginal: elemento,
+        startX: toque.clientX,
+        startY: toque.clientY,
+        dragging: false,
+        moved: false,
+        celdaActual: null,
+        fantasma: null,
+        timer: null
+    };
+
+    toqueArrastre.timer = setTimeout(() => {
+
+        if (toqueArrastre && !toqueArrastre.moved) {
+
+            iniciarArrastreTactil();
+        }
+
+    }, RETARDO_PULSACION);
+}
+
+
+function iniciarArrastreTactil() {
+
+    if (!toqueArrastre) {
+        return;
+    }
+
+    toqueArrastre.dragging = true;
+
+    const original = toqueArrastre.elementoOriginal;
+
+    original.classList.add("arrastrando");
+
+    if (navigator.vibrate) {
+        navigator.vibrate(15);
+    }
+
+    const fantasma = original.cloneNode(true);
+
+    fantasma.classList.add("fantasma-arrastre");
+    fantasma.classList.remove("arrastrando");
+
+    const rect = original.getBoundingClientRect();
+
+    fantasma.style.width = rect.width + "px";
+
+    document.body.appendChild(fantasma);
+
+    toqueArrastre.fantasma = fantasma;
+
+    moverFantasma(
+        toqueArrastre.startX,
+        toqueArrastre.startY
+    );
+}
+
+
+function moverFantasma(x, y) {
+
+    if (!toqueArrastre || !toqueArrastre.fantasma) {
+        return;
+    }
+
+    toqueArrastre.fantasma.style.left = x + "px";
+    toqueArrastre.fantasma.style.top = y + "px";
+}
+
+
+function actualizarZonaDestinoTactil(x, y) {
+
+    const elementoDebajo =
+        document.elementFromPoint(x, y);
+
+    const celda =
+        elementoDebajo
+            ? elementoDebajo.closest(".dia, .dia-mes")
+            : null;
+
+    document
+        .querySelectorAll(".dia-destino")
+        .forEach(el => el.classList.remove("dia-destino"));
+
+    if (celda && celda.dataset.fecha) {
+
+        celda.classList.add("dia-destino");
+        toqueArrastre.celdaActual = celda;
+
+    } else {
+
+        toqueArrastre.celdaActual = null;
+    }
+}
+
+
+function moverToqueEvento(e) {
+
+    if (!toqueArrastre) {
+        return;
+    }
+
+    const toque = e.touches[0];
+
+    const dx = toque.clientX - toqueArrastre.startX;
+    const dy = toque.clientY - toqueArrastre.startY;
+
+    if (!toqueArrastre.dragging) {
+
+        if (
+            Math.abs(dx) > UMBRAL_MOVIMIENTO ||
+            Math.abs(dy) > UMBRAL_MOVIMIENTO
+        ) {
+
+            toqueArrastre.moved = true;
+
+            clearTimeout(toqueArrastre.timer);
+        }
 
         return;
     }
 
-    if (
-        eventoOriginal.fecha ===
-        nuevaFecha
-    ) {
+    e.preventDefault();
 
-        eventoArrastrado = null;
+    moverFantasma(toque.clientX, toque.clientY);
+
+    actualizarZonaDestinoTactil(
+        toque.clientX,
+        toque.clientY
+    );
+}
+
+
+function finalizarToqueEvento(e) {
+
+    if (!toqueArrastre) {
+        return;
+    }
+
+    clearTimeout(toqueArrastre.timer);
+
+    const estabaArrastrando = toqueArrastre.dragging;
+    const seMovio = toqueArrastre.moved;
+    const evento = toqueArrastre.evento;
+    const celda = toqueArrastre.celdaActual;
+    const original = toqueArrastre.elementoOriginal;
+    const fantasma = toqueArrastre.fantasma;
+
+    if (fantasma) {
+        fantasma.remove();
+    }
+
+    document
+        .querySelectorAll(".dia-destino")
+        .forEach(el => el.classList.remove("dia-destino"));
+
+    if (estabaArrastrando) {
+
+        terminarArrastre(original);
+
+        if (celda && celda.dataset.fecha) {
+
+            manejarSoltarEvento(
+                evento.id,
+                celda.dataset.fecha
+            );
+        }
+
+    } else if (!seMovio) {
+
+        e.preventDefault();
+
+        editarEvento(evento);
+    }
+
+    toqueArrastre = null;
+}
+
+
+function cancelarToqueEvento() {
+
+    if (!toqueArrastre) {
+        return;
+    }
+
+    clearTimeout(toqueArrastre.timer);
+
+    if (toqueArrastre.fantasma) {
+        toqueArrastre.fantasma.remove();
+    }
+
+    if (toqueArrastre.dragging) {
+        terminarArrastre(toqueArrastre.elementoOriginal);
+    }
+
+    document
+        .querySelectorAll(".dia-destino")
+        .forEach(el => el.classList.remove("dia-destino"));
+
+    toqueArrastre = null;
+}
+
+
+/* =========================
+   LÓGICA COMÚN DE SOLTAR
+   ========================= */
+
+function manejarSoltarEvento(idEvento, nuevaFecha) {
+
+    const eventoOriginal =
+        horarios.find(
+            evento =>
+                String(evento.id) === String(idEvento)
+        );
+
+    if (!eventoOriginal) {
+        return;
+    }
+
+    if (eventoOriginal.fecha === nuevaFecha) {
 
         mostrarCalendario();
 
@@ -215,24 +422,15 @@ function soltarEvento(e, nuevaFecha) {
     }
 
     eventoPendiente = {
-
         evento: eventoOriginal,
-
         nuevaFecha: nuevaFecha
     };
 
-    eventoArrastrado = null;
-
     const modalArrastre =
-        document.getElementById(
-            "modalArrastre"
-        );
+        document.getElementById("modalArrastre");
 
     if (modalArrastre) {
-
-        modalArrastre.classList.remove(
-            "oculto"
-        );
+        modalArrastre.classList.remove("oculto");
     }
 }
 
@@ -270,8 +468,7 @@ function copiarEventoArrastrado() {
         return;
     }
 
-    const original =
-        eventoPendiente.evento;
+    const original = eventoPendiente.evento;
 
     const copia = {
 
@@ -279,12 +476,9 @@ function copiarEventoArrastrado() {
 
         id:
             Date.now() +
-            Math.floor(
-                Math.random() * 10000
-            ),
+            Math.floor(Math.random() * 10000),
 
-        fecha:
-            eventoPendiente.nuevaFecha
+        fecha: eventoPendiente.nuevaFecha
     };
 
     horarios.push(copia);
@@ -316,15 +510,10 @@ function cancelarEventoArrastrado() {
 function cerrarModalArrastre() {
 
     const modalArrastre =
-        document.getElementById(
-            "modalArrastre"
-        );
+        document.getElementById("modalArrastre");
 
     if (modalArrastre) {
-
-        modalArrastre.classList.add(
-            "oculto"
-        );
+        modalArrastre.classList.add("oculto");
     }
 }
 
@@ -333,39 +522,20 @@ function cerrarModalArrastre() {
    BOTONES ARRASTRE
    ========================= */
 
-const botonMover =
-    document.getElementById(
-        "botonMover"
-    );
-
-const botonCopiar =
-    document.getElementById(
-        "botonCopiar"
-    );
-
+const botonMover = document.getElementById("botonMover");
+const botonCopiar = document.getElementById("botonCopiar");
 const botonCancelarArrastre =
-    document.getElementById(
-        "botonCancelarArrastre"
-    );
+    document.getElementById("botonCancelarArrastre");
 
 if (botonMover) {
-
-    botonMover.addEventListener(
-        "click",
-        moverEventoArrastrado
-    );
+    botonMover.addEventListener("click", moverEventoArrastrado);
 }
 
 if (botonCopiar) {
-
-    botonCopiar.addEventListener(
-        "click",
-        copiarEventoArrastrado
-    );
+    botonCopiar.addEventListener("click", copiarEventoArrastrado);
 }
 
 if (botonCancelarArrastre) {
-
     botonCancelarArrastre.addEventListener(
         "click",
         cancelarEventoArrastrado
@@ -380,13 +550,75 @@ if (botonCancelarArrastre) {
 function mostrarCalendario() {
 
     if (vistaActual === "semana") {
-
         mostrarSemana();
-
     } else {
-
         mostrarMes();
     }
+}
+
+
+/* =========================
+   ADJUNTAR EVENTOS A UN ELEMENTO ARRASTRABLE
+   ========================= */
+
+function hacerArrastrable(elemento, evento) {
+
+    elemento.draggable = true;
+
+    elemento.addEventListener("dragstart", function (e) {
+        iniciarArrastre(e, evento, elemento);
+    });
+
+    elemento.addEventListener("dragend", function () {
+        terminarArrastre(elemento);
+    });
+
+    elemento.addEventListener("click", function () {
+
+        if (arrastreRealizado) {
+            return;
+        }
+
+        editarEvento(evento);
+    });
+
+    elemento.addEventListener(
+        "touchstart",
+        function (e) {
+            iniciarToqueEvento(e, evento, elemento);
+        },
+        { passive: true }
+    );
+
+    elemento.addEventListener(
+        "touchmove",
+        moverToqueEvento,
+        { passive: false }
+    );
+
+    elemento.addEventListener(
+        "touchend",
+        finalizarToqueEvento
+    );
+
+    elemento.addEventListener(
+        "touchcancel",
+        cancelarToqueEvento
+    );
+}
+
+
+function hacerZonaDeSoltar(elemento, fechaTexto) {
+
+    elemento.dataset.fecha = fechaTexto;
+
+    elemento.addEventListener("dragover", permitirSoltar);
+
+    elemento.addEventListener("dragleave", salirZonaSoltar);
+
+    elemento.addEventListener("drop", function (e) {
+        soltarEvento(e, fechaTexto);
+    });
 }
 
 
@@ -398,242 +630,110 @@ function mostrarSemana() {
 
     calendario.innerHTML = "";
 
-    tituloCalendario.textContent =
-        "Horario semanal";
+    tituloCalendario.textContent = "Horario semanal";
 
-    const contenedor =
-        document.createElement("div");
+    const contenedor = document.createElement("div");
 
-    contenedor.className =
-        "calendario-semana";
+    contenedor.className = "calendario-semana";
 
     const hoy = new Date();
 
-    const diaActual =
-        hoy.getDay();
+    const diaActual = hoy.getDay();
 
-    let lunes =
-        new Date(hoy);
+    let lunes = new Date(hoy);
 
     if (diaActual === 0) {
 
-        lunes.setDate(
-            hoy.getDate() - 6
-        );
+        lunes.setDate(hoy.getDate() - 6);
 
     } else {
 
-        lunes.setDate(
-            hoy.getDate() -
-            (diaActual - 1)
-        );
+        lunes.setDate(hoy.getDate() - (diaActual - 1));
     }
 
-    for (
-        let dia = 1;
-        dia <= 7;
-        dia++
-    ) {
+    for (let dia = 1; dia <= 7; dia++) {
 
-        const columna =
-            document.createElement("div");
+        const columna = document.createElement("div");
 
-        columna.className =
-            "dia";
+        columna.className = "dia";
 
-        const fechaDia =
-            new Date(lunes);
+        const fechaDia = new Date(lunes);
 
-        fechaDia.setDate(
-            lunes.getDate() +
-            dia - 1
-        );
+        fechaDia.setDate(lunes.getDate() + dia - 1);
 
-        const año =
-            fechaDia.getFullYear();
+        const año = fechaDia.getFullYear();
 
         const mes =
-            String(
-                fechaDia.getMonth() + 1
-            ).padStart(2, "0");
+            String(fechaDia.getMonth() + 1).padStart(2, "0");
 
         const numero =
-            String(
-                fechaDia.getDate()
-            ).padStart(2, "0");
+            String(fechaDia.getDate()).padStart(2, "0");
 
-        const fechaTexto =
-            `${año}-${mes}-${numero}`;
+        const fechaTexto = `${año}-${mes}-${numero}`;
 
+        hacerZonaDeSoltar(columna, fechaTexto);
 
-        columna.addEventListener(
-            "dragover",
-            permitirSoltar
-        );
+        const nombre = document.createElement("div");
 
-        columna.addEventListener(
-            "dragleave",
-            salirZonaSoltar
-        );
-
-        columna.addEventListener(
-            "drop",
-            function(e) {
-
-                soltarEvento(
-                    e,
-                    fechaTexto
-                );
-            }
-        );
-
-
-        const nombre =
-            document.createElement("div");
-
-        nombre.className =
-            "nombre-dia";
+        nombre.className = "nombre-dia";
 
         nombre.textContent =
             `${nombresDias[fechaDia.getDay()]} ${fechaDia.getDate()}/${fechaDia.getMonth() + 1}`;
 
+        const eventos = document.createElement("div");
 
-        const eventos =
-            document.createElement("div");
-
-        eventos.className =
-            "eventos";
-
+        eventos.className = "eventos";
 
         const eventosDia =
             horarios.filter(
-                evento =>
-                    evento.fecha ===
-                    fechaTexto
+                evento => evento.fecha === fechaTexto
             );
 
+        eventosDia.sort(function (a, b) {
 
-        eventosDia.sort(
-            function(a, b) {
-
-                if (
-                    a.todoElDia &&
-                    !b.todoElDia
-                ) {
-                    return -1;
-                }
-
-                if (
-                    !a.todoElDia &&
-                    b.todoElDia
-                ) {
-                    return 1;
-                }
-
-                return (
-                    a.inicio || ""
-                ).localeCompare(
-                    b.inicio || ""
-                );
+            if (a.todoElDia && !b.todoElDia) {
+                return -1;
             }
-        );
 
-
-        eventosDia.forEach(
-            function(evento) {
-
-                const elemento =
-                    document.createElement("div");
-
-                elemento.className =
-                    "evento";
-
-                elemento.style.background =
-                    evento.color;
-
-                elemento.draggable =
-                    true;
-
-
-                const horario =
-                    evento.todoElDia
-                        ? "Todo el día"
-                        : `${evento.inicio} - ${evento.fin}`;
-
-
-                elemento.innerHTML = `
-
-                    <strong>
-                        ${evento.nombre}
-                    </strong>
-
-                    <span>
-                        ${horario}
-                    </span>
-
-                `;
-
-
-                elemento.addEventListener(
-                    "dragstart",
-                    function(e) {
-
-                        iniciarArrastre(
-                            e,
-                            evento,
-                            elemento
-                        );
-                    }
-                );
-
-
-                elemento.addEventListener(
-                    "dragend",
-                    function() {
-
-                        terminarArrastre(
-                            elemento
-                        );
-                    }
-                );
-
-
-                elemento.addEventListener(
-                    "click",
-                    function() {
-
-                        if (arrastreRealizado) {
-                            return;
-                        }
-
-                        editarEvento(evento);
-                    }
-                );
-
-
-                eventos.appendChild(
-                    elemento
-                );
+            if (!a.todoElDia && b.todoElDia) {
+                return 1;
             }
-        );
 
+            return (a.inicio || "").localeCompare(
+                b.inicio || ""
+            );
+        });
 
-        columna.appendChild(
-            nombre
-        );
+        eventosDia.forEach(function (evento) {
 
-        columna.appendChild(
-            eventos
-        );
+            const elemento = document.createElement("div");
 
-        contenedor.appendChild(
-            columna
-        );
+            elemento.className = "evento";
+
+            elemento.style.background = evento.color;
+
+            const horario =
+                evento.todoElDia
+                    ? "Todo el día"
+                    : `${evento.inicio} - ${evento.fin}`;
+
+            elemento.innerHTML = `
+                <strong>${evento.nombre}</strong>
+                <span>${horario}</span>
+            `;
+
+            hacerArrastrable(elemento, evento);
+
+            eventos.appendChild(elemento);
+        });
+
+        columna.appendChild(nombre);
+        columna.appendChild(eventos);
+
+        contenedor.appendChild(columna);
     }
 
-    calendario.appendChild(
-        contenedor
-    );
+    calendario.appendChild(contenedor);
 }
 
 
@@ -645,22 +745,15 @@ function mostrarMes() {
 
     calendario.innerHTML = "";
 
-    const año =
-        fechaActual.getFullYear();
-
-    const mes =
-        fechaActual.getMonth();
+    const año = fechaActual.getFullYear();
+    const mes = fechaActual.getMonth();
 
     tituloCalendario.textContent =
         `${nombresMeses[mes]} ${año}`;
 
+    const contenedor = document.createElement("div");
 
-    const contenedor =
-        document.createElement("div");
-
-    contenedor.className =
-        "calendario-mes";
-
+    contenedor.className = "calendario-mes";
 
     const diasSemana = [
         "Lunes",
@@ -672,253 +765,108 @@ function mostrarMes() {
         "Domingo"
     ];
 
+    diasSemana.forEach(function (dia) {
 
-    diasSemana.forEach(
-        function(dia) {
+        const elemento = document.createElement("div");
 
-            const elemento =
-                document.createElement("div");
+        elemento.className = "cabecera-mes";
 
-            elemento.className =
-                "cabecera-mes";
+        elemento.textContent = dia;
 
-            elemento.textContent =
-                dia;
+        contenedor.appendChild(elemento);
+    });
 
-            contenedor.appendChild(
-                elemento
-            );
-        }
-    );
-
-
-    let primerDia =
-        new Date(
-            año,
-            mes,
-            1
-        ).getDay();
-
+    let primerDia = new Date(año, mes, 1).getDay();
 
     if (primerDia === 0) {
         primerDia = 7;
     }
 
+    const diasMes = new Date(año, mes + 1, 0).getDate();
 
-    const diasMes =
-        new Date(
-            año,
-            mes + 1,
-            0
-        ).getDate();
+    for (let i = 1; i < primerDia; i++) {
 
+        const vacio = document.createElement("div");
 
-    for (
-        let i = 1;
-        i < primerDia;
-        i++
-    ) {
+        vacio.className = "dia-mes";
 
-        const vacio =
-            document.createElement("div");
-
-        vacio.className =
-            "dia-mes";
-
-        contenedor.appendChild(
-            vacio
-        );
+        contenedor.appendChild(vacio);
     }
 
+    for (let dia = 1; dia <= diasMes; dia++) {
 
-    for (
-        let dia = 1;
-        dia <= diasMes;
-        dia++
-    ) {
+        const elemento = document.createElement("div");
 
-        const elemento =
-            document.createElement("div");
+        elemento.className = "dia-mes";
 
-        elemento.className =
-            "dia-mes";
+        const numero = document.createElement("div");
 
+        numero.className = "numero-dia";
 
-        const numero =
-            document.createElement("div");
+        numero.textContent = dia;
 
-        numero.className =
-            "numero-dia";
+        elemento.appendChild(numero);
 
-        numero.textContent =
-            dia;
+        const mesTexto = String(mes + 1).padStart(2, "0");
 
-        elemento.appendChild(
-            numero
-        );
+        const diaTexto = String(dia).padStart(2, "0");
 
+        const fechaTexto = `${año}-${mesTexto}-${diaTexto}`;
 
-        const mesTexto =
-            String(mes + 1)
-                .padStart(2, "0");
-
-        const diaTexto =
-            String(dia)
-                .padStart(2, "0");
-
-
-        const fechaTexto =
-            `${año}-${mesTexto}-${diaTexto}`;
-
-
-        elemento.addEventListener(
-            "dragover",
-            permitirSoltar
-        );
-
-        elemento.addEventListener(
-            "dragleave",
-            salirZonaSoltar
-        );
-
-        elemento.addEventListener(
-            "drop",
-            function(e) {
-
-                soltarEvento(
-                    e,
-                    fechaTexto
-                );
-            }
-        );
-
+        hacerZonaDeSoltar(elemento, fechaTexto);
 
         const eventosDia =
             horarios.filter(
-                evento =>
-                    evento.fecha ===
-                    fechaTexto
+                evento => evento.fecha === fechaTexto
             );
 
+        eventosDia.sort(function (a, b) {
 
-        eventosDia.sort(
-            function(a, b) {
-
-                if (
-                    a.todoElDia &&
-                    !b.todoElDia
-                ) {
-                    return -1;
-                }
-
-                if (
-                    !a.todoElDia &&
-                    b.todoElDia
-                ) {
-                    return 1;
-                }
-
-                return (
-                    a.inicio || ""
-                ).localeCompare(
-                    b.inicio || ""
-                );
+            if (a.todoElDia && !b.todoElDia) {
+                return -1;
             }
-        );
 
-
-        eventosDia.forEach(
-            function(evento) {
-
-                const eventoElemento =
-                    document.createElement("div");
-
-                eventoElemento.className =
-                    "evento-mes";
-
-                eventoElemento.style.background =
-                    evento.color;
-
-                eventoElemento.draggable =
-                    true;
-
-
-                if (evento.todoElDia) {
-
-                    eventoElemento.innerHTML = `
-
-                        ${evento.nombre}
-
-                        <small>
-                            Todo el día
-                        </small>
-
-                    `;
-
-                } else {
-
-                    eventoElemento.innerHTML = `
-
-                        ${evento.inicio}
-                        ${evento.nombre}
-
-                    `;
-                }
-
-
-                eventoElemento.addEventListener(
-                    "dragstart",
-                    function(e) {
-
-                        iniciarArrastre(
-                            e,
-                            evento,
-                            eventoElemento
-                        );
-                    }
-                );
-
-
-                eventoElemento.addEventListener(
-                    "dragend",
-                    function() {
-
-                        terminarArrastre(
-                            eventoElemento
-                        );
-                    }
-                );
-
-
-                eventoElemento.addEventListener(
-                    "click",
-                    function() {
-
-                        if (arrastreRealizado) {
-                            return;
-                        }
-
-                        editarEvento(evento);
-                    }
-                );
-
-
-                elemento.appendChild(
-                    eventoElemento
-                );
+            if (!a.todoElDia && b.todoElDia) {
+                return 1;
             }
-        );
 
+            return (a.inicio || "").localeCompare(
+                b.inicio || ""
+            );
+        });
 
-        contenedor.appendChild(
-            elemento
-        );
+        eventosDia.forEach(function (evento) {
+
+            const eventoElemento =
+                document.createElement("div");
+
+            eventoElemento.className = "evento-mes";
+
+            eventoElemento.style.background = evento.color;
+
+            if (evento.todoElDia) {
+
+                eventoElemento.innerHTML = `
+                    ${evento.nombre}
+                    <small>Todo el día</small>
+                `;
+
+            } else {
+
+                eventoElemento.innerHTML = `
+                    ${evento.inicio} ${evento.nombre}
+                `;
+            }
+
+            hacerArrastrable(eventoElemento, evento);
+
+            elemento.appendChild(eventoElemento);
+        });
+
+        contenedor.appendChild(elemento);
     }
 
-
-    calendario.appendChild(
-        contenedor
-    );
+    calendario.appendChild(contenedor);
 }
 
 
@@ -944,10 +892,7 @@ function actualizarHoras() {
 }
 
 
-todoElDia.addEventListener(
-    "change",
-    actualizarHoras
-);
+todoElDia.addEventListener("change", actualizarHoras);
 
 
 /* =========================
@@ -958,18 +903,12 @@ function abrirModal() {
 
     eventoEditando = null;
 
-    document.getElementById(
-        "tituloModal"
-    ).textContent =
+    document.getElementById("tituloModal").textContent =
         "Añadir evento";
 
-    document.getElementById(
-        "nombreEvento"
-    ).value = "";
+    document.getElementById("nombreEvento").value = "";
 
-    document.getElementById(
-        "fechaEvento"
-    ).value = "";
+    document.getElementById("fechaEvento").value = "";
 
     horaInicio.value = "";
 
@@ -979,19 +918,13 @@ function abrirModal() {
 
     actualizarHoras();
 
-    document.getElementById(
-        "colorEvento"
-    ).value =
+    document.getElementById("colorEvento").value =
         "#6366f1";
 
-    document.getElementById(
-        "botonEliminar"
-    ).style.display =
+    document.getElementById("botonEliminar").style.display =
         "none";
 
-    modal.classList.remove(
-        "oculto"
-    );
+    modal.classList.remove("oculto");
 }
 
 
@@ -1001,9 +934,7 @@ function abrirModal() {
 
 function cerrarModal() {
 
-    modal.classList.add(
-        "oculto"
-    );
+    modal.classList.add("oculto");
 
     eventoEditando = null;
 }
@@ -1015,49 +946,32 @@ function cerrarModal() {
 
 function editarEvento(evento) {
 
-    eventoEditando =
-        evento;
+    eventoEditando = evento;
 
-
-    document.getElementById(
-        "tituloModal"
-    ).textContent =
+    document.getElementById("tituloModal").textContent =
         "Editar evento";
 
-    document.getElementById(
-        "nombreEvento"
-    ).value =
+    document.getElementById("nombreEvento").value =
         evento.nombre;
 
-    document.getElementById(
-        "fechaEvento"
-    ).value =
+    document.getElementById("fechaEvento").value =
         evento.fecha || "";
 
-    horaInicio.value =
-        evento.inicio || "";
+    horaInicio.value = evento.inicio || "";
 
-    horaFin.value =
-        evento.fin || "";
+    horaFin.value = evento.fin || "";
 
-    todoElDia.checked =
-        evento.todoElDia === true;
+    todoElDia.checked = evento.todoElDia === true;
 
     actualizarHoras();
 
-    document.getElementById(
-        "colorEvento"
-    ).value =
+    document.getElementById("colorEvento").value =
         evento.color || "#6366f1";
 
-    document.getElementById(
-        "botonEliminar"
-    ).style.display =
+    document.getElementById("botonEliminar").style.display =
         "block";
 
-    modal.classList.remove(
-        "oculto"
-    );
+    modal.classList.remove("oculto");
 }
 
 
@@ -1068,121 +982,64 @@ function editarEvento(evento) {
 function guardarEvento() {
 
     const nombre =
-        document.getElementById(
-            "nombreEvento"
-        ).value.trim();
+        document.getElementById("nombreEvento")
+            .value.trim();
 
     const fecha =
-        document.getElementById(
-            "fechaEvento"
-        ).value;
+        document.getElementById("fechaEvento").value;
 
-    const inicio =
-        horaInicio.value;
+    const inicio = horaInicio.value;
 
-    const fin =
-        horaFin.value;
+    const fin = horaFin.value;
 
     const color =
-        document.getElementById(
-            "colorEvento"
-        ).value;
+        document.getElementById("colorEvento").value;
 
-    const esTodoElDia =
-        todoElDia.checked;
-
+    const esTodoElDia = todoElDia.checked;
 
     if (!nombre || !fecha) {
 
-        alert(
-            "Completa el nombre y la fecha."
-        );
+        alert("Completa el nombre y la fecha.");
 
         return;
     }
 
+    if (!esTodoElDia && (!inicio || !fin)) {
 
-    if (
-        !esTodoElDia &&
-        (!inicio || !fin)
-    ) {
-
-        alert(
-            "Introduce las horas o marca 'Todo el día'."
-        );
+        alert("Introduce las horas o marca 'Todo el día'.");
 
         return;
     }
 
+    if (!esTodoElDia && inicio >= fin) {
 
-    if (
-        !esTodoElDia &&
-        inicio >= fin
-    ) {
-
-        alert(
-            "La hora de finalización debe ser posterior."
-        );
+        alert("La hora de finalización debe ser posterior.");
 
         return;
     }
-
 
     if (eventoEditando) {
 
-        eventoEditando.nombre =
-            nombre;
-
-        eventoEditando.fecha =
-            fecha;
-
-        eventoEditando.inicio =
-            esTodoElDia
-                ? ""
-                : inicio;
-
-        eventoEditando.fin =
-            esTodoElDia
-                ? ""
-                : fin;
-
-        eventoEditando.color =
-            color;
-
-        eventoEditando.todoElDia =
-            esTodoElDia;
+        eventoEditando.nombre = nombre;
+        eventoEditando.fecha = fecha;
+        eventoEditando.inicio = esTodoElDia ? "" : inicio;
+        eventoEditando.fin = esTodoElDia ? "" : fin;
+        eventoEditando.color = color;
+        eventoEditando.todoElDia = esTodoElDia;
 
     } else {
 
         horarios.push({
 
-            id:
-                Date.now(),
-
-            nombre:
-                nombre,
-
-            fecha:
-                fecha,
-
-            inicio:
-                esTodoElDia
-                    ? ""
-                    : inicio,
-
-            fin:
-                esTodoElDia
-                    ? ""
-                    : fin,
-
-            color:
-                color,
-
-            todoElDia:
-                esTodoElDia
+            id: Date.now(),
+            nombre: nombre,
+            fecha: fecha,
+            inicio: esTodoElDia ? "" : inicio,
+            fin: esTodoElDia ? "" : fin,
+            color: color,
+            todoElDia: esTodoElDia
         });
     }
-
 
     guardarDatos();
 
@@ -1202,14 +1059,9 @@ function eliminarEvento() {
         return;
     }
 
-    const id =
-        eventoEditando.id;
+    const id = eventoEditando.id;
 
-    horarios =
-        horarios.filter(
-            evento =>
-                evento.id !== id
-        );
+    horarios = horarios.filter(evento => evento.id !== id);
 
     guardarDatos();
 
@@ -1223,27 +1075,16 @@ function eliminarEvento() {
    BOTONES DEL MODAL
    ========================= */
 
-document.getElementById(
-    "btnAnadirEvento"
-).onclick =
+document.getElementById("btnAnadirEvento").onclick =
     abrirModal;
 
-
-document.getElementById(
-    "cancelarEvento"
-).onclick =
+document.getElementById("cancelarEvento").onclick =
     cerrarModal;
 
-
-document.getElementById(
-    "guardarEvento"
-).onclick =
+document.getElementById("guardarEvento").onclick =
     guardarEvento;
 
-
-document.getElementById(
-    "botonEliminar"
-).onclick =
+document.getElementById("botonEliminar").onclick =
     eliminarEvento;
 
 
@@ -1251,47 +1092,28 @@ document.getElementById(
    VISTAS
    ========================= */
 
-document.getElementById(
-    "vistaSemana"
-).onclick = function() {
+document.getElementById("vistaSemana").onclick = function () {
 
-    vistaActual =
-        "semana";
+    vistaActual = "semana";
 
-    document.getElementById(
-        "vistaSemana"
-    ).classList.add(
-        "active"
-    );
+    document.getElementById("vistaSemana")
+        .classList.add("active");
 
-    document.getElementById(
-        "vistaMes"
-    ).classList.remove(
-        "active"
-    );
+    document.getElementById("vistaMes")
+        .classList.remove("active");
 
     mostrarCalendario();
 };
 
+document.getElementById("vistaMes").onclick = function () {
 
-document.getElementById(
-    "vistaMes"
-).onclick = function() {
+    vistaActual = "mes";
 
-    vistaActual =
-        "mes";
+    document.getElementById("vistaMes")
+        .classList.add("active");
 
-    document.getElementById(
-        "vistaMes"
-    ).classList.add(
-        "active"
-    );
-
-    document.getElementById(
-        "vistaSemana"
-    ).classList.remove(
-        "active"
-    );
+    document.getElementById("vistaSemana")
+        .classList.remove("active");
 
     mostrarCalendario();
 };
@@ -1301,25 +1123,16 @@ document.getElementById(
    NAVEGACIÓN
    ========================= */
 
-document.getElementById(
-    "mesAnterior"
-).onclick = function() {
+document.getElementById("mesAnterior").onclick = function () {
 
-    fechaActual.setMonth(
-        fechaActual.getMonth() - 1
-    );
+    fechaActual.setMonth(fechaActual.getMonth() - 1);
 
     mostrarCalendario();
 };
 
+document.getElementById("mesSiguiente").onclick = function () {
 
-document.getElementById(
-    "mesSiguiente"
-).onclick = function() {
-
-    fechaActual.setMonth(
-        fechaActual.getMonth() + 1
-    );
+    fechaActual.setMonth(fechaActual.getMonth() + 1);
 
     mostrarCalendario();
 };
