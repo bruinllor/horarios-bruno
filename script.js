@@ -62,7 +62,30 @@ function cargarDatos() {
     }
 }
 
+/* Obtener los eventos que se deben mostrar */
+function obtenerEventos() {
+
+    if (horarioActual === "AMBOS") {
+
+        return [
+            ...horarios.A.map(evento => ({
+                ...evento,
+                horarioOrigen: "A"
+            })),
+
+            ...horarios.B.map(evento => ({
+                ...evento,
+                horarioOrigen: "B"
+            }))
+        ];
+
+    }
+
+    return horarios[horarioActual];
+}
+
 function mostrarCalendario() {
+
     if (vistaActual === "semana") {
         mostrarSemana();
     } else {
@@ -71,6 +94,7 @@ function mostrarCalendario() {
 }
 
 function mostrarSemana() {
+
     calendario.innerHTML = "";
 
     tituloCalendario.textContent = "Horario semanal";
@@ -110,12 +134,16 @@ function mostrarSemana() {
         eventos.className = "eventos";
 
         const eventosDia =
-            horarios[horarioActual]
+            obtenerEventos()
                 .filter(evento => evento.fecha === fechaTexto);
 
-        eventosDia.sort((a, b) =>
-            a.inicio.localeCompare(b.inicio)
-        );
+        eventosDia.sort((a, b) => {
+
+            if (a.todoElDia && !b.todoElDia) return -1;
+            if (!a.todoElDia && b.todoElDia) return 1;
+
+            return (a.inicio || "").localeCompare(b.inicio || "");
+        });
 
         eventosDia.forEach(evento => {
 
@@ -124,9 +152,26 @@ function mostrarSemana() {
             elemento.className = "evento";
             elemento.style.background = evento.color;
 
+            const creador =
+                evento.horarioOrigen === "A"
+                    ? "Bruno"
+                    : "Mauro";
+
+            const horario =
+                evento.todoElDia
+                    ? "Todo el día"
+                    : `${evento.inicio} - ${evento.fin}`;
+
             elemento.innerHTML = `
                 <strong>${evento.nombre}</strong>
-                <span>${evento.inicio} - ${evento.fin}</span>
+
+                ${
+                    horarioActual === "AMBOS"
+                        ? `<small>${creador}</small>`
+                        : ""
+                }
+
+                <span>${horario}</span>
             `;
 
             elemento.onclick = () =>
@@ -145,6 +190,7 @@ function mostrarSemana() {
 }
 
 function mostrarMes() {
+
     calendario.innerHTML = "";
 
     const año = fechaActual.getFullYear();
@@ -221,14 +267,18 @@ function mostrarMes() {
             `${año}-${mesTexto}-${diaTexto}`;
 
         const eventosDia =
-            horarios[horarioActual]
+            obtenerEventos()
                 .filter(evento =>
                     evento.fecha === fechaTexto
                 );
 
-        eventosDia.sort((a, b) =>
-            a.inicio.localeCompare(b.inicio)
-        );
+        eventosDia.sort((a, b) => {
+
+            if (a.todoElDia && !b.todoElDia) return -1;
+            if (!a.todoElDia && b.todoElDia) return 1;
+
+            return (a.inicio || "").localeCompare(b.inicio || "");
+        });
 
         eventosDia.forEach(evento => {
 
@@ -241,8 +291,20 @@ function mostrarMes() {
             eventoElemento.style.background =
                 evento.color;
 
+            const creador =
+                evento.horarioOrigen === "A"
+                    ? "Bruno"
+                    : "Mauro";
+
+            const horario =
+                evento.todoElDia
+                    ? "Todo el día"
+                    : evento.inicio;
+
             eventoElemento.textContent =
-                `${evento.inicio} ${evento.nombre}`;
+                horarioActual === "AMBOS"
+                    ? `${horario} ${evento.nombre} (${creador})`
+                    : `${horario} ${evento.nombre}`;
 
             eventoElemento.onclick = () =>
                 editarEvento(evento);
@@ -256,7 +318,42 @@ function mostrarMes() {
     calendario.appendChild(contenedor);
 }
 
+function actualizarHoras() {
+
+    const todoElDia =
+        document.getElementById("todoElDia");
+
+    const horaInicio =
+        document.getElementById("horaInicio");
+
+    const horaFin =
+        document.getElementById("horaFin");
+
+    if (todoElDia.checked) {
+
+        horaInicio.disabled = true;
+        horaFin.disabled = true;
+
+        horaInicio.value = "";
+        horaFin.value = "";
+
+    } else {
+
+        horaInicio.disabled = false;
+        horaFin.disabled = false;
+    }
+}
+
 function abrirModal() {
+
+    if (horarioActual === "AMBOS") {
+
+        alert(
+            "Selecciona Bruno o Mauro para añadir un evento."
+        );
+
+        return;
+    }
 
     eventoEditando = null;
 
@@ -271,11 +368,15 @@ function abrirModal() {
 
     document.getElementById("horaFin").value = "";
 
+    document.getElementById("todoElDia").checked = false;
+
     document.getElementById("colorEvento").value =
         "#6366f1";
 
     document.getElementById("botonEliminar").style.display =
         "none";
+
+    actualizarHoras();
 
     modal.classList.remove("oculto");
 }
@@ -289,7 +390,10 @@ function cerrarModal() {
 
 function editarEvento(evento) {
 
-    eventoEditando = evento;
+    eventoEditando = {
+        id: evento.id,
+        horarioOrigen: evento.horarioOrigen || horarioActual
+    };
 
     document.getElementById("tituloModal").textContent =
         "Editar evento";
@@ -301,16 +405,21 @@ function editarEvento(evento) {
         evento.fecha || "";
 
     document.getElementById("horaInicio").value =
-        evento.inicio;
+        evento.inicio || "";
 
     document.getElementById("horaFin").value =
-        evento.fin;
+        evento.fin || "";
+
+    document.getElementById("todoElDia").checked =
+        evento.todoElDia === true;
 
     document.getElementById("colorEvento").value =
         evento.color;
 
     document.getElementById("botonEliminar").style.display =
         "block";
+
+    actualizarHoras();
 
     modal.classList.remove("oculto");
 }
@@ -325,6 +434,10 @@ function guardarEvento() {
         document.getElementById("fechaEvento")
             .value;
 
+    const todoElDia =
+        document.getElementById("todoElDia")
+            .checked;
+
     const inicio =
         document.getElementById("horaInicio")
             .value;
@@ -337,14 +450,21 @@ function guardarEvento() {
         document.getElementById("colorEvento")
             .value;
 
-    if (!nombre || !fecha || !inicio || !fin) {
+    if (!nombre || !fecha) {
 
         alert("Completa todos los campos.");
 
         return;
     }
 
-    if (inicio >= fin) {
+    if (!todoElDia && (!inicio || !fin)) {
+
+        alert("Completa las horas.");
+
+        return;
+    }
+
+    if (!todoElDia && inicio >= fin) {
 
         alert(
             "La hora de finalización debe ser posterior."
@@ -355,11 +475,26 @@ function guardarEvento() {
 
     if (eventoEditando) {
 
-        eventoEditando.nombre = nombre;
-        eventoEditando.fecha = fecha;
-        eventoEditando.inicio = inicio;
-        eventoEditando.fin = fin;
-        eventoEditando.color = color;
+        const origen =
+            eventoEditando.horarioOrigen;
+
+        const eventos =
+            horarios[origen];
+
+        const evento =
+            eventos.find(e =>
+                e.id === eventoEditando.id
+            );
+
+        if (evento) {
+
+            evento.nombre = nombre;
+            evento.fecha = fecha;
+            evento.inicio = todoElDia ? "" : inicio;
+            evento.fin = todoElDia ? "" : fin;
+            evento.todoElDia = todoElDia;
+            evento.color = color;
+        }
 
     } else {
 
@@ -371,12 +506,13 @@ function guardarEvento() {
 
             fecha: fecha,
 
-            inicio: inicio,
+            inicio: todoElDia ? "" : inicio,
 
-            fin: fin,
+            fin: todoElDia ? "" : fin,
+
+            todoElDia: todoElDia,
 
             color: color
-
         });
     }
 
@@ -395,30 +531,23 @@ function eliminarEvento() {
 
     const confirmar =
         confirm(
-            `¿Quieres eliminar "${eventoEditando.nombre}"?`
+            `¿Quieres eliminar el evento?`
         );
 
     if (!confirmar) {
         return;
     }
 
+    const origen =
+        eventoEditando.horarioOrigen;
+
     const eventos =
-        horarios[horarioActual];
+        horarios[origen];
 
-    const indice =
-        eventos.indexOf(eventoEditando);
-
-    if (indice !== -1) {
-
-        eventos.splice(indice, 1);
-
-    } else {
-
-        horarios[horarioActual] =
-            eventos.filter(evento =>
-                evento.id !== eventoEditando.id
-            );
-    }
+    horarios[origen] =
+        eventos.filter(evento =>
+            evento.id !== eventoEditando.id
+        );
 
     guardarDatos();
 
@@ -427,15 +556,11 @@ function eliminarEvento() {
     mostrarCalendario();
 }
 
+/* Selector de horarios */
+
 document.getElementById("horarioA").onclick = () => {
 
     horarioActual = "A";
-
-    document.getElementById("horarioA")
-        .classList.add("active");
-
-    document.getElementById("horarioB")
-        .classList.remove("active");
 
     mostrarCalendario();
 };
@@ -444,14 +569,17 @@ document.getElementById("horarioB").onclick = () => {
 
     horarioActual = "B";
 
-    document.getElementById("horarioB")
-        .classList.add("active");
+    mostrarCalendario();
+};
 
-    document.getElementById("horarioA")
-        .classList.remove("active");
+document.getElementById("horarioAmbos").onclick = () => {
+
+    horarioActual = "AMBOS";
 
     mostrarCalendario();
 };
+
+/* Vistas */
 
 document.getElementById("vistaSemana").onclick = () => {
 
@@ -479,6 +607,8 @@ document.getElementById("vistaMes").onclick = () => {
     mostrarCalendario();
 };
 
+/* Modal */
+
 document.getElementById("btnAnadirEvento").onclick =
     abrirModal;
 
@@ -490,6 +620,11 @@ document.getElementById("guardarEvento").onclick =
 
 document.getElementById("botonEliminar").onclick =
     eliminarEvento;
+
+document.getElementById("todoElDia").onchange =
+    actualizarHoras;
+
+/* Navegación del mes */
 
 document.getElementById("mesAnterior").onclick = () => {
 
