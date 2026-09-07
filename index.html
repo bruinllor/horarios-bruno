@@ -6,78 +6,128 @@
     <title>Mis horarios</title>
     <link rel="stylesheet" href="style.css?v=3">
 </head>
+
 <body>
+
     <header>
         <h1>Mis horarios</h1>
+
         <div class="selector">
-            <button id="horarioA" style="display:none;">Bruno</button>
+            <button id="horarioA" style="display: none;">Bruno</button>
             <button id="horarioB" style="display: none;">Mauro</button>
+            <button id="horarioAmbos" style="display: none;">Ambos</button>
         </div>
+
         <div class="vistas">
             <button id="vistaSemana" class="active">Semana</button>
             <button id="vistaMes">Mes</button>
         </div>
     </header>
+
     <main>
+
         <div class="barra-superior">
             <button id="mesAnterior">‹</button>
             <h2 id="tituloCalendario"></h2>
             <button id="mesSiguiente">›</button>
         </div>
+
         <button id="btnAnadirEvento" class="boton-añadir">
             + Añadir evento
         </button>
+
         <div id="calendario"></div>
+
     </main>
+
     <div id="modal" class="modal oculto">
+
         <div class="modal-contenido">
+
             <h2 id="tituloModal">Añadir evento</h2>
-            <label for="nombreEvento">Nombre</label>
+
+            <label for="nombreEvento">
+                Nombre
+            </label>
+
             <input
                 type="text"
                 id="nombreEvento"
                 placeholder="Ej. Matemáticas"
             >
-            <label for="fechaEvento">Fecha</label>
-<input
-    type="date"
-    id="fechaEvento"
->
-            <label for="horaInicio">Hora de inicio</label>
+
+            <label for="fechaEvento">
+                Fecha
+            </label>
+
+            <input
+                type="date"
+                id="fechaEvento"
+            >
+
+            <label for="horaInicio">
+                Hora de inicio
+            </label>
+
             <input
                 type="time"
                 id="horaInicio"
             >
-            <label for="horaFin">Hora de finalización</label>
+
+            <label for="horaFin">
+                Hora de finalización
+            </label>
+
             <input
                 type="time"
                 id="horaFin"
             >
-            <label for="colorEvento">Color</label>
+
+            <div class="checkbox-todo-dia">
+                <input
+                    type="checkbox"
+                    id="todoElDia"
+                >
+                <label for="todoElDia">Todo el día</label>
+            </div>
+
+            <label for="colorEvento">
+                Color
+            </label>
+
             <input
                 type="color"
                 id="colorEvento"
                 value="#6366f1"
             >
+
             <div class="acciones-modal">
+
                 <button
                     id="botonEliminar"
                     style="display: none; background: #dc2626; color: white;"
                 >
                     Eliminar
                 </button>
+
                 <button id="cancelarEvento">
                     Cancelar
                 </button>
+
                 <button
                     id="guardarEvento"
                     class="guardar"
                 >
                     Guardar
                 </button>
+
             </div>
+
         </div>
+
     </div>
+
     <script src="script.js"></script>
+
 </body>
 </html>
