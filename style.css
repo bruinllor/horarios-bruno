@@ -95,7 +95,7 @@ main {
     background: var(--bg-panel);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .calendario-semana {
@@ -130,8 +130,12 @@ main {
     border-radius: 8px;
     padding: 10px;
     margin-bottom: 8px;
-    cursor: pointer;
+    cursor: grab;
     font-size: 14px;
+}
+
+.evento:active {
+    cursor: grabbing;
 }
 
 .evento strong {
@@ -173,23 +177,48 @@ main {
     padding: 4px 6px;
     margin-bottom: 3px;
     font-size: 12px;
-    cursor: pointer;
+    cursor: grab;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+.evento-mes:active {
+    cursor: grabbing;
+}
+
+
+/* =========================
+   ARRASTRE
+   ========================= */
+
+.dia-destino {
+    background: rgba(99, 102, 241, 0.12);
+    outline: 2px dashed var(--acento);
+    outline-offset: -2px;
+}
+
+.arrastrando {
+    opacity: 0.5;
+}
+
+
+/* =========================
+   MODAL AÑADIR / EDITAR
+   ========================= */
+
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
+    z-index: 9000;
 }
 
-.oculto {
+.modal.oculto {
     display: none;
 }
 
@@ -232,7 +261,10 @@ main {
     color-scheme: dark;
 }
 
-/* ---- Todo el día ---- */
+
+/* =========================
+   TODO EL DÍA
+   ========================= */
 
 .checkbox-todo-dia {
     display: flex;
@@ -254,7 +286,10 @@ main {
     padding: 0 !important;
 }
 
-/* ---- Botones del modal ---- */
+
+/* =========================
+   BOTONES DEL MODAL
+   ========================= */
 
 .acciones-modal {
     display: flex;
@@ -274,17 +309,141 @@ main {
     color: white;
 }
 
-/* ---- Tablet / móvil grande ---- */
+
+/* =========================
+   INSTRUCCIÓN DE ARRASTRE
+   ========================= */
+
+.instruccion-arrastre {
+    text-align: center;
+    margin: 0 0 10px;
+    color: var(--texto-suave);
+    font-size: 13px;
+}
+
+
+/* =========================
+   MODAL COPIAR / MOVER
+   ========================= */
+
+.modal-arrastre {
+    position: fixed !important;
+
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    width: 100vw !important;
+    height: 100vh !important;
+
+    margin: 0 !important;
+    padding: 20px !important;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    z-index: 99999 !important;
+
+    backdrop-filter: blur(4px);
+}
+
+.modal-arrastre.oculto {
+    display: none !important;
+}
+
+.caja-arrastre {
+    position: relative;
+
+    width: 100%;
+    max-width: 380px;
+
+    margin: 0 !important;
+    padding: 24px;
+
+    background: var(--bg-panel);
+
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+
+    text-align: center;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.6);
+
+    z-index: 100000;
+}
+
+.caja-arrastre h3 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    color: var(--texto);
+}
+
+.caja-arrastre p {
+    margin: 0 0 22px;
+    color: var(--texto-suave);
+    font-size: 14px;
+}
+
+.botones-arrastre {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.botones-arrastre button {
+    flex: 1;
+    padding: 11px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.boton-mover {
+    background: var(--acento);
+    color: white;
+}
+
+.boton-copiar {
+    background: var(--bg-panel-alt);
+    color: white;
+}
+
+.boton-cancelar-arrastre {
+    background: transparent;
+    color: var(--texto-suave);
+    border: 1px solid var(--borde) !important;
+}
+
+.botones-arrastre button:hover {
+    filter: brightness(1.15);
+}
+
+
+/* =========================
+   TABLET
+   ========================= */
 
 @media (max-width: 900px) {
 
     .calendario-semana {
         overflow-x: auto;
-        grid-template-columns: repeat(7, minmax(150px, 1fr));
+        grid-template-columns:
+            repeat(7, minmax(150px, 1fr));
     }
+
 }
 
-/* ---- Móvil ---- */
+
+/* =========================
+   MÓVIL
+   ========================= */
 
 @media (max-width: 600px) {
 
@@ -351,4 +510,18 @@ main {
     .acciones-modal button {
         flex: 1;
     }
+
+}
+
+
+/* =========================
+   MÓVIL PEQUEÑO
+   ========================= */
+
+@media (max-width: 500px) {
+
+    .botones-arrastre {
+        flex-direction: column;
+    }
+
 }
