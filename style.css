@@ -1,0 +1,326 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0f1115;
+    --bg-panel: #1a1d24;
+    --bg-panel-alt: #20242c;
+    --borde: #2b2f38;
+    --texto: #e5e7eb;
+    --texto-suave: #9ca3af;
+    --acento: #6366f1;
+    --peligro: #dc2626;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--texto);
+}
+
+header {
+    background: var(--bg-panel);
+    padding: 16px;
+    border-bottom: 1px solid var(--borde);
+    text-align: center;
+}
+
+h1 {
+    margin: 0 0 15px;
+    font-size: 22px;
+}
+
+.selector,
+.vistas {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    background: var(--bg-panel-alt);
+    color: var(--texto);
+    font-size: 14px;
+}
+
+button:hover {
+    filter: brightness(1.15);
+}
+
+button.active {
+    background: var(--acento);
+    color: white;
+}
+
+main {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 12px;
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.barra-superior h2 {
+    min-width: 180px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.boton-añadir {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    margin: 20px auto;
+    background: var(--acento);
+    color: white;
+    font-weight: bold;
+    padding: 12px 16px;
+}
+
+#calendario {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+.calendario-semana {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.dia {
+    min-height: 500px;
+    min-width: 0;
+    border-right: 1px solid var(--borde);
+}
+
+.dia:last-child {
+    border-right: none;
+}
+
+.nombre-dia {
+    background: var(--bg-panel-alt);
+    padding: 15px 5px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid var(--borde);
+}
+
+.eventos {
+    padding: 10px;
+}
+
+.evento {
+    color: white;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.evento strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.calendario-mes {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.cabecera-mes {
+    background: var(--bg-panel-alt);
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid var(--borde);
+}
+
+.dia-mes {
+    min-height: 120px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 8px;
+    border-right: 1px solid var(--borde);
+    border-bottom: 1px solid var(--borde);
+}
+
+.numero-dia {
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: var(--texto-suave);
+}
+
+.evento-mes {
+    color: white;
+    border-radius: 5px;
+    padding: 4px 6px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.oculto {
+    display: none;
+}
+
+.modal-contenido {
+    background: var(--bg-panel);
+    width: 100%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 22px;
+    border-radius: 15px;
+    border: 1px solid var(--borde);
+}
+
+.modal-contenido h2 {
+    margin-top: 0;
+}
+
+.modal-contenido label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--texto-suave);
+}
+
+.modal-contenido input,
+.modal-contenido select {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 7px;
+    font-size: 15px;
+    color: var(--texto);
+}
+
+.modal-contenido input[type="date"],
+.modal-contenido input[type="time"] {
+    color-scheme: dark;
+}
+
+.acciones-modal {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.guardar {
+    background: var(--acento);
+    color: white;
+}
+
+#botonEliminar {
+    background: var(--peligro);
+    color: white;
+}
+
+/* ---- Tablet / móvil grande ---- */
+@media (max-width: 900px) {
+    .calendario-semana {
+        overflow-x: auto;
+        grid-template-columns: repeat(7, minmax(150px, 1fr));
+    }
+}
+
+/* ---- Móvil ---- */
+@media (max-width: 600px) {
+    h1 {
+        font-size: 18px;
+    }
+
+    header {
+        padding: 12px 8px;
+    }
+
+    button {
+        padding: 9px 12px;
+        font-size: 13px;
+    }
+
+    main {
+        margin: 12px auto;
+        padding: 0 8px;
+    }
+
+    .barra-superior {
+        gap: 10px;
+    }
+
+    .barra-superior h2 {
+        font-size: 15px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .boton-añadir {
+        max-width: 100%;
+        margin: 14px auto;
+    }
+
+    .dia {
+        min-height: 350px;
+    }
+
+    .calendario-mes {
+        font-size: 11px;
+    }
+
+    .dia-mes {
+        min-height: 70px;
+        padding: 4px;
+    }
+
+    .evento-mes {
+        font-size: 10px;
+        padding: 3px 4px;
+    }
+
+    .modal-contenido {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .acciones-modal {
+        justify-content: stretch;
+    }
+
+    .acciones-modal button {
+        flex: 1;
+    }
+}
