@@ -1,3 +1,35 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getDatabase,
+    ref,
+    set,
+    onValue
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
+/* =========================
+   CONFIGURACIÓN DE FIREBASE
+   =========================
+   Sustituye estos valores por los de tu propio
+   proyecto (Firebase Console > Configuración del
+   proyecto > Tus apps > SDK de Firebase).
+   ========================= */
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDNLanoPTp76LIVO_CiiT3CZvlz6C0mNAk",
+    authDomain: "horarios-42998.firebaseapp.com",
+    databaseURL: "https://horarios-42998-default-rtdb.firebaseio.com",
+    projectId: "horarios-42998",
+    storageBucket: "horarios-42998.firebasestorage.app",
+    messagingSenderId: "823146395738",
+    appId: "1:823146395738:web:3d6255ab3999b618270063"
+};
+
+const appFirebase = initializeApp(firebaseConfig);
+const db = getDatabase(appFirebase);
+const horariosRef = ref(db, "horarios");
+
+
 let vistaActual = "semana";
 let fechaActual = new Date();
 let eventoEditando = null;
@@ -48,63 +80,52 @@ const nombresMeses = [
 
 
 /* =========================
-   GUARDAR Y CARGAR DATOS
+   GUARDAR Y ESCUCHAR DATOS (FIREBASE)
    ========================= */
 
 function guardarDatos() {
 
-    localStorage.setItem(
-        "horarios_copia",
-        JSON.stringify(horarios)
-    );
+    set(horariosRef, horarios).catch(function (error) {
+
+        console.error(
+            "Error al guardar en Firebase:",
+            error
+        );
+    });
 }
 
 
-function cargarDatos() {
+function escucharDatos() {
 
-    const datos =
-        localStorage.getItem("horarios_copia");
+    onValue(horariosRef, function (snapshot) {
 
-    if (!datos) {
-        horarios = [];
-        return;
-    }
+        const datos = snapshot.val();
 
-    try {
+        if (!datos) {
 
-        const datosCargados =
-            JSON.parse(datos);
+            horarios = [];
 
-        if (
-            datosCargados &&
-            !Array.isArray(datosCargados) &&
-            datosCargados.A &&
-            datosCargados.B
-        ) {
+        } else if (Array.isArray(datos)) {
 
-            horarios = [
-                ...datosCargados.A,
-                ...datosCargados.B
-            ];
-
-        } else if (Array.isArray(datosCargados)) {
-
-            horarios = datosCargados;
+            horarios = datos;
 
         } else {
 
-            horarios = [];
+            // Firebase puede guardar arrays con huecos
+            // como objetos; nos aseguramos de convertirlo
+            // de vuelta a un array plano.
+            horarios = Object.values(datos);
         }
 
-    } catch (error) {
+        mostrarCalendario();
+
+    }, function (error) {
 
         console.error(
-            "Error al cargar los horarios:",
+            "Error al leer de Firebase:",
             error
         );
-
-        horarios = [];
-    }
+    });
 }
 
 
@@ -1162,6 +1183,4 @@ document.getElementById("mesSiguiente").onclick = function () {
    INICIO
    ========================= */
 
-cargarDatos();
-
-mostrarCalendario();
+escucharDatos();
