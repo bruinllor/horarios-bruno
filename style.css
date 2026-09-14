@@ -593,4 +593,13 @@ main {
 
 @media (max-width: 500px) {
     .botones-arrastre { flex-direction: column; }
+    /* =========================
+   BORDE PARA TODO EL DÍA EN VISTA MENSUAL
+   ========================= */
+
+.dia-mes.dia-con-evento-todo-dia {
+    border: 2px solid var(--color-borde-dia) !important;
+    position: relative;
+    z-index: 5;
+}
 }
