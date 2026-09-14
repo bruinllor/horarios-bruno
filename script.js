@@ -157,7 +157,7 @@ function soltarEvento(e, nuevaFecha) {
    ========================= */
 
 const UMBRAL_MOVIMIENTO = 10;
-const RETARDO_PULSACION = 500; // 500ms para considerar mantener pulsado
+const RETARDO_PULSACION = 500;
 
 let toqueArrastre = null;
 
@@ -183,7 +183,7 @@ function iniciarToqueEvento(e, evento, elemento) {
         if (toqueArrastre && !toqueArrastre.moved) {
             toqueArrastre.longPressActive = true;
             if (navigator.vibrate) {
-                navigator.vibrate(40); // Feedback háptico al mantener pulsado
+                navigator.vibrate(40);
             }
             iniciarArrastreTactil();
         }
@@ -271,12 +271,10 @@ function finalizarToqueEvento(e) {
         terminarArrastre(original);
         manejarSoltarEvento(evento.id, celda.dataset.fecha);
     } else if (seMantuvoPulsado && !seMovio) {
-        // MANTENER PULSADO EN MÓVIL (Sin mover): Tacha o destacha la tarea
         e.preventDefault();
         terminarArrastre(original);
         alternarCompletado(evento);
     } else if (!seMovio) {
-        // UN SOLO TOQUE CORTO: Edita el evento
         e.preventDefault();
         editarEvento(evento);
     }
@@ -387,7 +385,10 @@ function hacerArrastrable(elemento, evento) {
     if (!esDispositivoTactil) {
         elemento.draggable = true;
 
+        let clickTimer = null;
+
         elemento.addEventListener("dragstart", function (e) {
+            if (clickTimer) clearTimeout(clickTimer);
             iniciarArrastre(e, evento, elemento);
         });
 
@@ -395,21 +396,32 @@ function hacerArrastrable(elemento, evento) {
             terminarArrastre(elemento);
         });
 
-        // UN CLIC: Abre el modal de edición
+        // UN CLIC: Espera 250ms por si hay un segundo clic para no abrir el modal de golpe
         elemento.addEventListener("click", function () {
             if (arrastreRealizado) return;
-            editarEvento(evento);
+
+            if (clickTimer === null) {
+                clickTimer = setTimeout(() => {
+                    clickTimer = null;
+                    editarEvento(evento);
+                }, 250);
+            }
         });
 
-        // DOBLE CLIC EN RATÓN: Tacha / des-tacha la tarea
+        // DOBLE CLIC: Cancela la edición y tacha/des-tacha
         elemento.addEventListener("dblclick", function (e) {
             e.stopPropagation();
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+            }
             alternarCompletado(evento);
         });
 
         return;
     }
 
+    // Dispositivos Táctiles
     elemento.addEventListener("touchstart", function (e) {
         iniciarToqueEvento(e, evento, elemento);
     }, { passive: true });
