@@ -174,19 +174,19 @@ main {
     border-right: 1px solid var(--borde);
 }
 
-/* ESTILO PARA DÍA CON EVENTO DE TODO EL DÍA */
+/* BORDES PARA DÍA CON EVENTO "TODO EL DÍA" EN SEMANA */
 .dia.dia-con-evento-todo-dia {
-    border-left: 2px solid var(--color-borde-dia) !important;
-    border-right: 2px solid var(--color-borde-dia) !important;
+    border-left: 3px solid var(--color-borde-dia) !important;
+    border-right: 3px solid var(--color-borde-dia) !important;
     z-index: 5;
 }
 
 .dia.dia-con-evento-todo-dia .cabecera-dia-semana {
-    border-top: 2px solid var(--color-borde-dia) !important;
+    border-top: 3px solid var(--color-borde-dia) !important;
 }
 
 .dia.dia-con-evento-todo-dia .rejilla-horas {
-    border-bottom: 2px solid var(--color-borde-dia) !important;
+    border-bottom: 3px solid var(--color-borde-dia) !important;
 }
 
 .cabecera-dia-semana {
@@ -290,6 +290,14 @@ main {
     padding: 8px;
     border-right: 1px solid var(--borde);
     border-bottom: 1px solid var(--borde);
+    position: relative;
+}
+
+/* BORDE PARA DÍA CON EVENTO "TODO EL DÍA" EN MES */
+.dia-mes.dia-con-evento-todo-dia {
+    outline: 3px solid var(--color-borde-dia) !important;
+    outline-offset: -3px;
+    z-index: 5;
 }
 
 .numero-dia {
@@ -593,13 +601,4 @@ main {
 
 @media (max-width: 500px) {
     .botones-arrastre { flex-direction: column; }
-    /* =========================
-   BORDE PARA TODO EL DÍA EN VISTA MENSUAL
-   ========================= */
-
-.dia-mes.dia-con-evento-todo-dia {
-    border: 2px solid var(--color-borde-dia) !important;
-    position: relative;
-    z-index: 5;
-}
 }
