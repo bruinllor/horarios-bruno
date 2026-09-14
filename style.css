@@ -174,6 +174,21 @@ main {
     border-right: 1px solid var(--borde);
 }
 
+/* ESTILO PARA DÍA CON EVENTO DE TODO EL DÍA */
+.dia.dia-con-evento-todo-dia {
+    border-left: 2px solid var(--color-borde-dia) !important;
+    border-right: 2px solid var(--color-borde-dia) !important;
+    z-index: 5;
+}
+
+.dia.dia-con-evento-todo-dia .cabecera-dia-semana {
+    border-top: 2px solid var(--color-borde-dia) !important;
+}
+
+.dia.dia-con-evento-todo-dia .rejilla-horas {
+    border-bottom: 2px solid var(--color-borde-dia) !important;
+}
+
 .cabecera-dia-semana {
     border-bottom: 1px solid var(--borde);
     background: var(--bg-panel-alt);
