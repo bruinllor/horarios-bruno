@@ -24,21 +24,28 @@ header {
     background: var(--bg-panel);
     padding: 16px;
     border-bottom: 1px solid var(--borde);
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 h1 {
-    margin: 0 0 15px;
+    margin: 0 0 10px;
     font-size: 22px;
+    text-align: center;
 }
 
 .selector,
 .vistas {
     display: flex;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
+    width: 100%;
 }
 
 button {
@@ -155,7 +162,7 @@ main {
 .cabecera-dia-semana {
     border-bottom: 1px solid var(--borde);
     background: var(--bg-panel-alt);
-    position: relative; /* Desaparece al hacer scroll hacia abajo */
+    position: relative;
     z-index: 10;
 }
 
