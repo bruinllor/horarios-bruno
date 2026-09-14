@@ -559,7 +559,7 @@ function mostrarSemana() {
         const eventoTodoElDia = eventosDia.find(evento => evento.todoElDia);
         if (eventoTodoElDia) {
             columna.classList.add("dia-con-evento-todo-dia");
-            columna.style.setProperty("--color-borde-dia", eventoTodoElDia.color);
+            columna.style.setProperty("--color-borde-dia", eventoTodoElDia.color || "#6366f1");
         }
 
         eventosDia.forEach(function (evento) {
@@ -666,7 +666,7 @@ function mostrarMes() {
         const eventoTodoElDia = eventosDia.find(evento => evento.todoElDia);
         if (eventoTodoElDia) {
             elemento.classList.add("dia-con-evento-todo-dia");
-            elemento.style.setProperty("--color-borde-dia", eventoTodoElDia.color);
+            elemento.style.setProperty("--color-borde-dia", eventoTodoElDia.color || "#6366f1");
         }
 
         eventosDia.sort(function (a, b) {
