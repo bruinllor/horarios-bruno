@@ -99,7 +99,7 @@ main {
 }
 
 /* =========================
-   VISTA SEMANAL
+   VISTA SEMANAL CON ESPACIADO LATERAL
    ========================= */
 
 .calendario-semana {
@@ -107,6 +107,7 @@ main {
     grid-template-columns: 65px repeat(7, minmax(0, 1fr));
     max-height: 80vh;
     overflow-y: auto;
+    padding: 0 16px; /* Espacio extra a los lados de Lunes y Domingo */
 }
 
 .columna-horas {
@@ -143,8 +144,12 @@ main {
     position: relative;
 }
 
+.dia:first-of-type {
+    border-left: 1px solid var(--borde); /* Delimita bien la columna del Lunes */
+}
+
 .dia:last-child {
-    border-right: none;
+    border-right: 1px solid var(--borde); /* Delimita bien la columna del Domingo */
 }
 
 .cabecera-dia-semana {
@@ -191,8 +196,8 @@ main {
 
 .evento-posicionado {
     position: absolute;
-    left: 4px;
-    right: 4px;
+    left: 6px;
+    right: 6px;
     border-radius: 6px;
     padding: 6px 8px;
     color: white;
@@ -229,6 +234,7 @@ main {
 .calendario-mes {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    padding: 0 16px;
 }
 
 .cabecera-mes {
@@ -527,6 +533,7 @@ main {
     .calendario-semana {
         overflow-x: auto;
         grid-template-columns: 50px repeat(7, minmax(130px, 1fr));
+        padding: 0 8px;
     }
 }
 
@@ -538,7 +545,7 @@ main {
     .barra-superior { gap: 10px; }
     .barra-superior h2 { font-size: 15px; min-width: 0; flex: 1; }
     .boton-añadir { max-width: 100%; margin: 14px auto; }
-    .calendario-mes { font-size: 11px; }
+    .calendario-mes { font-size: 11px; padding: 0 6px; }
     .dia-mes { min-height: 70px; padding: 4px; }
     .evento-mes { font-size: 10px; padding: 3px 4px; }
     .modal-contenido { padding: 16px; border-radius: 12px; }
