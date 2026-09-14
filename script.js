@@ -45,7 +45,6 @@ const modal = document.getElementById("modal");
 const todoElDia = document.getElementById("todoElDia");
 const horaInicio = document.getElementById("horaInicio");
 const horaFin = document.getElementById("horaFin");
-const completadoEvento = document.getElementById("completadoEvento");
 
 const nombresDias = [
     "Domingo",
@@ -259,12 +258,10 @@ function finalizarToqueEvento(e) {
         terminarArrastre(original);
         manejarSoltarEvento(evento.id, celda.dataset.fecha);
     } else if (!seMovio) {
-        // Lógica de Doble Toque en Móvil
         const ahora = Date.now();
         const diferenciaTiempo = ahora - ultimoToqueTiempo;
 
         if (diferenciaTiempo < 300 && diferenciaTiempo > 0) {
-            // DOBLE TOQUE: Cancela edición y tacha la tarea
             if (toqueTimer) {
                 clearTimeout(toqueTimer);
                 toqueTimer = null;
@@ -273,7 +270,6 @@ function finalizarToqueEvento(e) {
             alternarCompletado(evento);
             ultimoToqueTiempo = 0;
         } else {
-            // TOQUE SIMPLE: Espera por si viene un segundo toque para editar
             ultimoToqueTiempo = ahora;
             toqueTimer = setTimeout(() => {
                 editarEvento(evento);
@@ -419,7 +415,6 @@ function hacerArrastrable(elemento, evento) {
         return;
     }
 
-    // Eventos táctiles para móviles
     elemento.addEventListener("touchstart", function (e) {
         iniciarToqueEvento(e, evento, elemento);
     }, { passive: true });
@@ -636,7 +631,6 @@ function abrirModal() {
     todoElDia.checked = false;
     actualizarHoras();
     document.getElementById("colorEvento").value = "#6366f1";
-    completadoEvento.checked = false;
     document.getElementById("botonEliminar").style.display = "none";
     modal.classList.remove("oculto");
 }
@@ -656,7 +650,6 @@ function editarEvento(evento) {
     todoElDia.checked = evento.todoElDia === true;
     actualizarHoras();
     document.getElementById("colorEvento").value = evento.color || "#6366f1";
-    completadoEvento.checked = evento.completado === true;
     document.getElementById("botonEliminar").style.display = "block";
     modal.classList.remove("oculto");
 }
@@ -668,7 +661,6 @@ function guardarEvento() {
     const fin = horaFin.value;
     const color = document.getElementById("colorEvento").value;
     const esTodoElDia = todoElDia.checked;
-    const completado = completadoEvento.checked;
 
     if (!nombre || !fecha) {
         alert("Completa el nombre y la fecha.");
@@ -692,7 +684,6 @@ function guardarEvento() {
         eventoEditando.fin = esTodoElDia ? "" : fin;
         eventoEditando.color = color;
         eventoEditando.todoElDia = esTodoElDia;
-        eventoEditando.completado = completado;
     } else {
         horarios.push({
             id: Date.now(),
@@ -702,7 +693,7 @@ function guardarEvento() {
             fin: esTodoElDia ? "" : fin,
             color: color,
             todoElDia: esTodoElDia,
-            completado: completado
+            completado: false
         });
     }
 
