@@ -210,7 +210,6 @@ main {
     filter: grayscale(20%);
 }
 
-
 /* =========================
    ARRASTRAR
    ========================= */
@@ -235,7 +234,6 @@ main {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     transform: translate(-50%, -50%) scale(1.03);
 }
-
 
 /* =========================
    MODAL AÑADIR / EDITAR
@@ -295,7 +293,6 @@ main {
     color-scheme: dark;
 }
 
-
 /* =========================
    TODO EL DÍA
    ========================= */
@@ -320,7 +317,6 @@ main {
     padding: 0 !important;
 }
 
-
 /* =========================
    BOTONES DEL MODAL
    ========================= */
@@ -343,7 +339,6 @@ main {
     color: white;
 }
 
-
 /* =========================
    INSTRUCCIÓN DE ARRASTRE
    ========================= */
@@ -354,7 +349,6 @@ main {
     color: var(--texto-suave);
     font-size: 13px;
 }
-
 
 /* =========================
    MODAL COPIAR / MOVER
@@ -459,7 +453,6 @@ main {
     filter: brightness(1.15);
 }
 
-
 /* =========================
    TABLET
    ========================= */
@@ -473,7 +466,6 @@ main {
     }
 
 }
-
 
 /* =========================
    MÓVIL
@@ -546,7 +538,6 @@ main {
     }
 
 }
-
 
 /* =========================
    MÓVIL PEQUEÑO
