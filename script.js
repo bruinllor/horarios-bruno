@@ -440,7 +440,7 @@ function horaAMinutos(horaTexto) {
 }
 
 /* =========================
-   VISTA SEMANAL (COORDINADA CON FECHAACTUAL)
+   VISTA SEMANAL
    ========================= */
 
 const ALTURA_HORA_PX = 90;
@@ -707,6 +707,45 @@ function mostrarMes() {
 }
 
 /* =========================
+   CONTROLES DE TIEMPO (TAB E INCOMPLETOS)
+   ========================= */
+
+function normalizarHora(input) {
+    let val = input.value.trim();
+    if (!val) return;
+    
+    // Si solo escriben la hora (ej. "8" o "08")
+    if (/^\d{1,2}$/.test(val)) {
+        input.value = val.padStart(2, "0") + ":00";
+    }
+    // Si escriben la hora y dos puntos (ej. "8:" o "08:")
+    else if (/^\d{1,2}:$/.test(val)) {
+        input.value = val.slice(0, -1).padStart(2, "0") + ":00";
+    }
+    // Si escriben hora y un solo dígito de minutos (ej. "8:5")
+    else if (/^\d{1,2}:\d{1}$/.test(val)) {
+        let partes = val.split(":");
+        input.value = partes[0].padStart(2, "0") + ":" + partes[1].padEnd(2, "0");
+    }
+}
+
+horaInicio.addEventListener("keydown", function (e) {
+    if (e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        normalizarHora(horaInicio);
+        horaFin.focus();
+    }
+});
+
+horaInicio.addEventListener("blur", function () {
+    normalizarHora(this);
+});
+
+horaFin.addEventListener("blur", function () {
+    normalizarHora(this);
+});
+
+/* =========================
    CONTROLES Y MODALES
    ========================= */
 
@@ -758,6 +797,9 @@ function editarEvento(evento) {
 }
 
 function guardarEvento() {
+    normalizarHora(horaInicio);
+    normalizarHora(horaFin);
+
     const nombre = document.getElementById("nombreEvento").value.trim();
     const fecha = document.getElementById("fechaEvento").value;
     const inicio = horaInicio.value;
