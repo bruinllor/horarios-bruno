@@ -440,7 +440,7 @@ function horaAMinutos(horaTexto) {
 }
 
 /* =========================
-   VISTA SEMANAL CORREGIDA
+   VISTA SEMANAL CON BORDE POR EVENTO TODO EL DÍA
    ========================= */
 
 const ALTURA_HORA_PX = 90;
@@ -515,7 +515,6 @@ function mostrarSemana() {
     cuerpoHoras.className = "cuerpo-horas";
     cuerpoHoras.style.height = `${alturaTotalPx}px`;
 
-    // CORRECCIÓN: Solamente renderizamos los bloques desde horaInicioRango hasta horaFinRango - 1
     for (let h = horaInicioRango; h < horaFinRango; h++) {
         const marcaHora = document.createElement("div");
         marcaHora.className = "marca-hora";
@@ -556,6 +555,13 @@ function mostrarSemana() {
         }
 
         const eventosDia = horarios.filter(evento => evento.fecha === fInfo.fechaTexto);
+
+        // BUSCAR SI HAY UN EVENTO DE "TODO EL DÍA" PARA CAMBIAR EL COLOR DEL BORDE
+        const eventoTodoElDia = eventosDia.find(evento => evento.todoElDia);
+        if (eventoTodoElDia) {
+            columna.classList.add("dia-con-evento-todo-dia");
+            columna.style.setProperty("--color-borde-dia", eventoTodoElDia.color);
+        }
 
         eventosDia.forEach(function (evento) {
             const elemento = document.createElement("div");
