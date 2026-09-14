@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis horarios</title>
     <style>html { background: #0f1115; }</style>
-    <link rel="stylesheet" href="style.css?v=5">
+    <!-- Incrementamos v=10 para obligar al navegador a descargar los nuevos estilos -->
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <header>
@@ -35,7 +36,7 @@
             + Añadir evento
         </button>
         <p class="instruccion-arrastre">
-            Mantén pulsado un evento para moverlo o copiarlo
+            Doble clic (o mantener pulsado en móvil) para tachar. Arrastra para mover o copiar.
         </p>
         <div id="calendario"></div>
     </main>
@@ -147,6 +148,6 @@
             </div>
         </div>
     </div>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=10"></script>
 </body>
 </html>
