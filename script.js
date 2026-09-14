@@ -52,6 +52,7 @@ const modal = document.getElementById("modal");
 const todoElDia = document.getElementById("todoElDia");
 const horaInicio = document.getElementById("horaInicio");
 const horaFin = document.getElementById("horaFin");
+const completadoEvento = document.getElementById("completadoEvento");
 
 const nombresDias = [
     "Domingo",
@@ -565,6 +566,54 @@ if (botonCancelarArrastre) {
 
 
 /* =========================
+   CASILLA "COMPLETADO"
+   ========================= */
+
+function crearCasillaCompletado(evento, claseAdicional) {
+
+    const casilla = document.createElement("input");
+
+    casilla.type = "checkbox";
+
+    casilla.className = claseAdicional
+        ? `checkbox-completado ${claseAdicional}`
+        : "checkbox-completado";
+
+    casilla.checked = evento.completado === true;
+
+    // Evita que tocar la casilla abra el modal de
+    // edición o dispare el arrastre del evento.
+
+    casilla.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+
+    casilla.addEventListener("mousedown", function (e) {
+        e.stopPropagation();
+    });
+
+    casilla.addEventListener(
+        "touchstart",
+        function (e) {
+            e.stopPropagation();
+        },
+        { passive: true }
+    );
+
+    casilla.addEventListener("change", function () {
+
+        evento.completado = casilla.checked;
+
+        guardarDatos();
+
+        mostrarCalendario();
+    });
+
+    return casilla;
+}
+
+
+/* =========================
    MOSTRAR CALENDARIO
    ========================= */
 
@@ -751,6 +800,10 @@ function mostrarSemana() {
 
             elemento.className = "evento";
 
+            if (evento.completado) {
+                elemento.classList.add("completado");
+            }
+
             elemento.style.background = evento.color;
 
             const horario =
@@ -758,10 +811,19 @@ function mostrarSemana() {
                     ? "Todo el día"
                     : `${evento.inicio} - ${evento.fin}`;
 
-            elemento.innerHTML = `
+            const contenido = document.createElement("div");
+
+            contenido.className = "evento-contenido";
+
+            contenido.innerHTML = `
                 <strong>${evento.nombre}</strong>
                 <span>${horario}</span>
             `;
+
+            const casilla = crearCasillaCompletado(evento);
+
+            elemento.appendChild(casilla);
+            elemento.appendChild(contenido);
 
             hacerArrastrable(elemento, evento);
 
@@ -883,21 +945,37 @@ function mostrarMes() {
 
             eventoElemento.className = "evento-mes";
 
+            if (evento.completado) {
+                eventoElemento.classList.add("completado");
+            }
+
             eventoElemento.style.background = evento.color;
+
+            const texto = document.createElement("span");
+
+            texto.className = "evento-mes-texto";
 
             if (evento.todoElDia) {
 
-                eventoElemento.innerHTML = `
+                texto.innerHTML = `
                     ${evento.nombre}
                     <small>Todo el día</small>
                 `;
 
             } else {
 
-                eventoElemento.innerHTML = `
+                texto.innerHTML = `
                     ${evento.inicio} ${evento.nombre}
                 `;
             }
+
+            const casilla = crearCasillaCompletado(
+                evento,
+                "checkbox-completado-mes"
+            );
+
+            eventoElemento.appendChild(casilla);
+            eventoElemento.appendChild(texto);
 
             hacerArrastrable(eventoElemento, evento);
 
@@ -962,6 +1040,8 @@ function abrirModal() {
     document.getElementById("colorEvento").value =
         "#6366f1";
 
+    completadoEvento.checked = false;
+
     document.getElementById("botonEliminar").style.display =
         "none";
 
@@ -1009,6 +1089,8 @@ function editarEvento(evento) {
     document.getElementById("colorEvento").value =
         evento.color || "#6366f1";
 
+    completadoEvento.checked = evento.completado === true;
+
     document.getElementById("botonEliminar").style.display =
         "block";
 
@@ -1037,6 +1119,8 @@ function guardarEvento() {
         document.getElementById("colorEvento").value;
 
     const esTodoElDia = todoElDia.checked;
+
+    const completado = completadoEvento.checked;
 
     if (!nombre || !fecha) {
 
@@ -1067,6 +1151,7 @@ function guardarEvento() {
         eventoEditando.fin = esTodoElDia ? "" : fin;
         eventoEditando.color = color;
         eventoEditando.todoElDia = esTodoElDia;
+        eventoEditando.completado = completado;
 
     } else {
 
@@ -1078,7 +1163,8 @@ function guardarEvento() {
             inicio: esTodoElDia ? "" : inicio,
             fin: esTodoElDia ? "" : fin,
             color: color,
-            todoElDia: esTodoElDia
+            todoElDia: esTodoElDia,
+            completado: completado
         });
     }
 
