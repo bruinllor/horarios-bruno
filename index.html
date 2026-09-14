@@ -1,613 +1,152 @@
-* {
-    box-sizing: border-box;
-}
-
-:root {
-    --bg: #0f1115;
-    --bg-panel: #1a1d24;
-    --bg-panel-alt: #20242c;
-    --borde: #2b2f38;
-    --texto: #e5e7eb;
-    --texto-suave: #9ca3af;
-    --acento: #6366f1;
-    --peligro: #dc2626;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: var(--bg);
-    color: var(--texto);
-}
-
-header {
-    background: var(--bg-panel);
-    padding: 16px;
-    border-bottom: 1px solid var(--borde);
-    text-align: center;
-}
-
-h1 {
-    margin: 0 0 15px;
-    font-size: 22px;
-}
-
-.selector,
-.vistas {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-button {
-    border: none;
-    border-radius: 8px;
-    padding: 10px 16px;
-    cursor: pointer;
-    background: var(--bg-panel-alt);
-    color: var(--texto);
-    font-size: 14px;
-}
-
-button:hover {
-    filter: brightness(1.15);
-}
-
-button.active {
-    background: var(--acento);
-    color: white;
-}
-
-main {
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 12px;
-}
-
-.barra-superior {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.barra-superior h2 {
-    min-width: 180px;
-    text-align: center;
-    font-size: 18px;
-}
-
-.boton-añadir {
-    display: block;
-    width: 100%;
-    max-width: 320px;
-    margin: 20px auto;
-    background: var(--acento);
-    color: white;
-    font-weight: bold;
-    padding: 12px 16px;
-}
-
-#calendario {
-    background: var(--bg-panel);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.calendario-semana {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-}
-
-.dia {
-    min-height: 500px;
-    min-width: 0;
-    border-right: 1px solid var(--borde);
-}
-
-.dia:last-child {
-    border-right: none;
-}
-
-.nombre-dia {
-    background: var(--bg-panel-alt);
-    padding: 15px 5px;
-    text-align: center;
-    font-weight: bold;
-    border-bottom: 1px solid var(--borde);
-}
-
-.eventos {
-    padding: 10px;
-}
-
-.evento {
-    color: white;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 8px;
-    cursor: grab;
-    font-size: 14px;
-    touch-action: pan-y;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.evento:active {
-    cursor: grabbing;
-}
-
-.evento strong {
-    display: block;
-    margin-bottom: 4px;
-}
-
-.evento-contenido {
-    min-width: 0;
-    flex: 1;
-}
-
-.calendario-mes {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-}
-
-.cabecera-mes {
-    background: var(--bg-panel-alt);
-    padding: 12px;
-    text-align: center;
-    font-weight: bold;
-    border-bottom: 1px solid var(--borde);
-}
-
-.dia-mes {
-    min-height: 120px;
-    min-width: 0;
-    overflow: hidden;
-    padding: 8px;
-    border-right: 1px solid var(--borde);
-    border-bottom: 1px solid var(--borde);
-}
-
-.numero-dia {
-    font-weight: bold;
-    margin-bottom: 6px;
-    color: var(--texto-suave);
-}
-
-.evento-mes {
-    color: white;
-    border-radius: 5px;
-    padding: 4px 6px;
-    margin-bottom: 3px;
-    font-size: 12px;
-    cursor: grab;
-    touch-action: pan-y;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.evento-mes:active {
-    cursor: grabbing;
-}
-
-.evento-mes-texto {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-
-/* =========================
-   CASILLA "COMPLETADO"
-   ========================= */
-
-.checkbox-completado {
-    width: 16px;
-    height: 16px;
-    margin-top: 2px;
-    flex-shrink: 0;
-    cursor: pointer;
-    accent-color: white;
-}
-
-.checkbox-completado-mes {
-    width: 11px;
-    height: 11px;
-    flex-shrink: 0;
-    cursor: pointer;
-    accent-color: white;
-}
-
-.evento.completado,
-.evento-mes.completado {
-    opacity: 0.55;
-}
-
-.evento.completado strong,
-.evento-mes.completado .evento-mes-texto {
-    text-decoration: line-through;
-}
-
-
-/* =========================
-   ARRASTRE
-   ========================= */
-
-.dia-destino {
-    background: rgba(99, 102, 241, 0.12);
-    outline: 2px dashed var(--acento);
-    outline-offset: -2px;
-}
-
-.arrastrando {
-    opacity: 0.5;
-}
-
-.fantasma-arrastre {
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    z-index: 100000;
-    opacity: 0.92;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-    transform: translate(-50%, -50%) scale(1.03);
-}
-
-
-/* =========================
-   MODAL AÑADIR / EDITAR
-   ========================= */
-
-.modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    z-index: 9000;
-}
-
-.modal.oculto {
-    display: none;
-}
-
-.modal-contenido {
-    background: var(--bg-panel);
-    width: 100%;
-    max-width: 450px;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 22px;
-    border-radius: 15px;
-    border: 1px solid var(--borde);
-}
-
-.modal-contenido h2 {
-    margin-top: 0;
-}
-
-.modal-contenido label {
-    display: block;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: var(--texto-suave);
-}
-
-.modal-contenido input,
-.modal-contenido select {
-    width: 100%;
-    padding: 10px;
-    background: var(--bg-panel-alt);
-    border: 1px solid var(--borde);
-    border-radius: 7px;
-    font-size: 15px;
-    color: var(--texto);
-}
-
-.modal-contenido input[type="date"],
-.modal-contenido input[type="time"] {
-    color-scheme: dark;
-}
-
-
-/* =========================
-   TODO EL DÍA
-   ========================= */
-
-.checkbox-todo-dia {
-    display: flex;
-    align-items: center;
-    margin-top: 15px;
-    margin-bottom: 5px;
-}
-
-.modal-contenido .checkbox-todo-dia input[type="checkbox"] {
-    width: 16px !important;
-    height: 16px;
-    margin: 0 6px 0 0 !important;
-    padding: 0 !important;
-}
-
-.modal-contenido .checkbox-todo-dia label {
-    display: inline !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-
-/* =========================
-   COMPLETADA (MODAL)
-   ========================= */
-
-.checkbox-completado-modal {
-    display: flex;
-    align-items: center;
-    margin-top: 15px;
-    margin-bottom: 5px;
-}
-
-.modal-contenido .checkbox-completado-modal input[type="checkbox"] {
-    width: 16px !important;
-    height: 16px;
-    margin: 0 6px 0 0 !important;
-    padding: 0 !important;
-}
-
-.modal-contenido .checkbox-completado-modal label {
-    display: inline !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-
-/* =========================
-   BOTONES DEL MODAL
-   ========================= */
-
-.acciones-modal {
-    display: flex;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-.guardar {
-    background: var(--acento);
-    color: white;
-}
-
-#botonEliminar {
-    background: var(--peligro);
-    color: white;
-}
-
-
-/* =========================
-   INSTRUCCIÓN DE ARRASTRE
-   ========================= */
-
-.instruccion-arrastre {
-    text-align: center;
-    margin: 0 0 10px;
-    color: var(--texto-suave);
-    font-size: 13px;
-}
-
-
-/* =========================
-   MODAL COPIAR / MOVER
-   ========================= */
-
-.modal-arrastre {
-    position: fixed !important;
-
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-
-    width: 100vw !important;
-    height: 100vh !important;
-
-    margin: 0 !important;
-    padding: 20px !important;
-
-    background: rgba(0, 0, 0, 0.65);
-
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-
-    z-index: 99999 !important;
-
-    backdrop-filter: blur(4px);
-}
-
-.modal-arrastre.oculto {
-    display: none !important;
-}
-
-.caja-arrastre {
-    position: relative;
-
-    width: 100%;
-    max-width: 380px;
-
-    margin: 0 !important;
-    padding: 24px;
-
-    background: var(--bg-panel);
-
-    border: 1px solid var(--borde);
-    border-radius: 16px;
-
-    text-align: center;
-
-    box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.6);
-
-    z-index: 100000;
-}
-
-.caja-arrastre h3 {
-    margin: 0 0 8px;
-    font-size: 19px;
-    color: var(--texto);
-}
-
-.caja-arrastre p {
-    margin: 0 0 22px;
-    color: var(--texto-suave);
-    font-size: 14px;
-}
-
-.botones-arrastre {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-}
-
-.botones-arrastre button {
-    flex: 1;
-    padding: 11px 14px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.boton-mover {
-    background: var(--acento);
-    color: white;
-}
-
-.boton-copiar {
-    background: var(--bg-panel-alt);
-    color: white;
-}
-
-.boton-cancelar-arrastre {
-    background: transparent;
-    color: var(--texto-suave);
-    border: 1px solid var(--borde) !important;
-}
-
-.botones-arrastre button:hover {
-    filter: brightness(1.15);
-}
-
-
-/* =========================
-   TABLET
-   ========================= */
-
-@media (max-width: 900px) {
-
-    .calendario-semana {
-        overflow-x: auto;
-        grid-template-columns:
-            repeat(7, minmax(150px, 1fr));
-    }
-
-}
-
-
-/* =========================
-   MÓVIL
-   ========================= */
-
-@media (max-width: 600px) {
-
-    h1 {
-        font-size: 18px;
-    }
-
-    header {
-        padding: 12px 8px;
-    }
-
-    button {
-        padding: 9px 12px;
-        font-size: 13px;
-    }
-
-    main {
-        margin: 12px auto;
-        padding: 0 8px;
-    }
-
-    .barra-superior {
-        gap: 10px;
-    }
-
-    .barra-superior h2 {
-        font-size: 15px;
-        min-width: 0;
-        flex: 1;
-    }
-
-    .boton-añadir {
-        max-width: 100%;
-        margin: 14px auto;
-    }
-
-    .dia {
-        min-height: 350px;
-    }
-
-    .calendario-mes {
-        font-size: 11px;
-    }
-
-    .dia-mes {
-        min-height: 70px;
-        padding: 4px;
-    }
-
-    .evento-mes {
-        font-size: 10px;
-        padding: 3px 4px;
-    }
-
-    .modal-contenido {
-        padding: 16px;
-        border-radius: 12px;
-    }
-
-    .acciones-modal {
-        justify-content: stretch;
-    }
-
-    .acciones-modal button {
-        flex: 1;
-    }
-
-}
-
-
-/* =========================
-   MÓVIL PEQUEÑO
-   ========================= */
-
-@media (max-width: 500px) {
-
-    .botones-arrastre {
-        flex-direction: column;
-    }
-
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis horarios</title>
+    <style>html { background: #0f1115; }</style>
+    <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+    <header>
+        <h1>Mis horarios</h1>
+        <div class="vistas">
+            <button id="vistaSemana" class="active">
+                Semana
+            </button>
+            <button id="vistaMes">
+                Mes
+            </button>
+        </div>
+    </header>
+    <main>
+        <div class="barra-superior">
+            <button id="mesAnterior">
+                ‹
+            </button>
+            <h2 id="tituloCalendario"></h2>
+            <button id="mesSiguiente">
+                ›
+            </button>
+        </div>
+        <button
+            id="btnAnadirEvento"
+            class="boton-añadir">
+            + Añadir evento
+        </button>
+        <p class="instruccion-arrastre">
+            Mantén pulsado un evento para moverlo o copiarlo
+        </p>
+        <div id="calendario"></div>
+    </main>
+    <!-- MODAL AÑADIR / EDITAR -->
+    <div id="modal" class="modal oculto">
+        <div class="modal-contenido">
+            <h2 id="tituloModal">
+                Añadir evento
+            </h2>
+            <label for="nombreEvento">
+                Nombre
+            </label>
+            <input
+                type="text"
+                id="nombreEvento"
+                placeholder="Ej. Matemáticas"
+            >
+            <label for="fechaEvento">
+                Fecha
+            </label>
+            <input
+                type="date"
+                id="fechaEvento"
+            >
+            <label for="horaInicio">
+                Hora de inicio
+            </label>
+            <input
+                type="time"
+                id="horaInicio"
+            >
+            <label for="horaFin">
+                Hora de finalización
+            </label>
+            <input
+                type="time"
+                id="horaFin"
+            >
+            <div class="checkbox-todo-dia">
+                <input
+                    type="checkbox"
+                    id="todoElDia"
+                >
+                <label for="todoElDia">
+                    Todo el día
+                </label>
+            </div>
+            <label for="colorEvento">
+                Color
+            </label>
+            <input
+                type="color"
+                id="colorEvento"
+                value="#6366f1"
+            >
+            <div class="checkbox-completado-modal">
+                <input
+                    type="checkbox"
+                    id="completadoEvento"
+                >
+                <label for="completadoEvento">
+                    Completada
+                </label>
+            </div>
+            <div class="acciones-modal">
+                <button
+                    id="botonEliminar"
+                    style="display: none; background: #dc2626; color: white;">
+                    Eliminar
+                </button>
+                <button id="cancelarEvento">
+                    Cancelar
+                </button>
+                <button
+                    id="guardarEvento"
+                    class="guardar">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- MODAL COPIAR / MOVER -->
+    <div
+        id="modalArrastre"
+        class="modal-arrastre oculto">
+        <div class="caja-arrastre">
+            <h3>
+                ¿Qué quieres hacer?
+            </h3>
+            <p>
+                Has arrastrado este evento a otro día.
+            </p>
+            <div class="botones-arrastre">
+                <button
+                    id="botonMover"
+                    class="boton-mover">
+                    Mover
+                </button>
+                <button
+                    id="botonCopiar"
+                    class="boton-copiar">
+                    Copiar
+                </button>
+                <button
+                    id="botonCancelarArrastre"
+                    class="boton-cancelar-arrastre">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
