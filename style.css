@@ -133,6 +133,7 @@ main {
     cursor: grab;
     font-size: 14px;
     touch-action: pan-y;
+    transition: opacity 0.2s ease;
 }
 
 .evento:active {
@@ -183,15 +184,35 @@ main {
     text-overflow: ellipsis;
     white-space: nowrap;
     touch-action: pan-y;
+    transition: opacity 0.2s ease;
 }
 
 .evento-mes:active {
     cursor: grabbing;
 }
 
+/* =========================
+   TACHADO DE EVENTOS COMPLETADOS
+   ========================= */
+
+.evento.completado,
+.evento.completado *,
+.evento-mes.completado,
+.evento-mes.completado * {
+    text-decoration: line-through !important;
+    text-decoration-color: rgba(255, 255, 255, 0.8) !important;
+    text-decoration-thickness: 2px !important;
+}
+
+.evento.completado,
+.evento-mes.completado {
+    opacity: 0.55;
+    filter: grayscale(20%);
+}
+
 
 /* =========================
-   ARRASTRE
+   ARRASTRAR
    ========================= */
 
 .dia-destino {
