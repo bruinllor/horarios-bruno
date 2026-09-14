@@ -61,7 +61,7 @@ button.active {
 }
 
 main {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 20px auto;
     padding: 0 12px;
 }
@@ -98,52 +98,137 @@ main {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
+/* =========================
+   VISTA SEMANAL REESTRUCTURADA
+   ========================= */
+
 .calendario-semana {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: 65px repeat(7, minmax(0, 1fr));
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.columna-horas {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--borde);
+    background: var(--bg-panel-alt);
+    user-select: none;
+}
+
+.header-hora-vacio {
+    min-height: 80px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.cuerpo-horas {
+    height: 1440px;
+    position: relative;
+}
+
+.marca-hora {
+    height: 60px;
+    font-size: 11px;
+    color: var(--texto-suave);
+    text-align: center;
+    line-height: 12px;
+    padding-top: 4px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
 .dia {
-    min-height: 500px;
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     border-right: 1px solid var(--borde);
+    position: relative;
 }
 
 .dia:last-child {
     border-right: none;
 }
 
-.nombre-dia {
+.cabecera-dia-semana {
+    border-bottom: 1px solid var(--borde);
     background: var(--bg-panel-alt);
-    padding: 15px 5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.nombre-dia {
+    padding: 10px 5px;
     text-align: center;
     font-weight: bold;
+    font-size: 13px;
     border-bottom: 1px solid var(--borde);
 }
 
-.eventos {
-    padding: 10px;
+.area-todo-el-dia {
+    min-height: 40px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.2);
 }
 
-.evento {
+.evento-todo-dia {
+    font-size: 12px;
+    padding: 4px 6px;
+    border-radius: 5px;
     color: white;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 8px;
     cursor: grab;
-    font-size: 14px;
-    touch-action: pan-y;
-    transition: opacity 0.2s ease;
 }
 
-.evento:active {
-    cursor: grabbing;
+.rejilla-horas {
+    height: 1440px;
+    position: relative;
+    background: var(--bg-panel);
 }
 
-.evento strong {
-    display: block;
-    margin-bottom: 4px;
+.linea-hora {
+    height: 60px;
+    border-bottom: 1px solid var(--borde);
 }
+
+.evento-posicionado {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: white;
+    cursor: grab;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 2;
+}
+
+.evento-posicionado .evento-contenido {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.evento-posicionado strong {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.evento-posicionado span {
+    font-size: 10px;
+    opacity: 0.9;
+}
+
+/* =========================
+   VISTA MENSUAL
+   ========================= */
 
 .calendario-mes {
     display: grid;
@@ -356,26 +441,19 @@ main {
 
 .modal-arrastre {
     position: fixed !important;
-
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-
     width: 100vw !important;
     height: 100vh !important;
-
     margin: 0 !important;
     padding: 20px !important;
-
     background: rgba(0, 0, 0, 0.65);
-
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-
     z-index: 99999 !important;
-
     backdrop-filter: blur(4px);
 }
 
@@ -385,23 +463,15 @@ main {
 
 .caja-arrastre {
     position: relative;
-
     width: 100%;
     max-width: 380px;
-
     margin: 0 !important;
     padding: 24px;
-
     background: var(--bg-panel);
-
     border: 1px solid var(--borde);
     border-radius: 16px;
-
     text-align: center;
-
-    box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.6);
-
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     z-index: 100000;
 }
 
@@ -454,99 +524,32 @@ main {
 }
 
 /* =========================
-   TABLET
+   TABLET Y MÓVIL
    ========================= */
 
 @media (max-width: 900px) {
-
     .calendario-semana {
         overflow-x: auto;
-        grid-template-columns:
-            repeat(7, minmax(150px, 1fr));
+        grid-template-columns: 50px repeat(7, minmax(130px, 1fr));
     }
-
 }
-
-/* =========================
-   MÓVIL
-   ========================= */
 
 @media (max-width: 600px) {
-
-    h1 {
-        font-size: 18px;
-    }
-
-    header {
-        padding: 12px 8px;
-    }
-
-    button {
-        padding: 9px 12px;
-        font-size: 13px;
-    }
-
-    main {
-        margin: 12px auto;
-        padding: 0 8px;
-    }
-
-    .barra-superior {
-        gap: 10px;
-    }
-
-    .barra-superior h2 {
-        font-size: 15px;
-        min-width: 0;
-        flex: 1;
-    }
-
-    .boton-añadir {
-        max-width: 100%;
-        margin: 14px auto;
-    }
-
-    .dia {
-        min-height: 350px;
-    }
-
-    .calendario-mes {
-        font-size: 11px;
-    }
-
-    .dia-mes {
-        min-height: 70px;
-        padding: 4px;
-    }
-
-    .evento-mes {
-        font-size: 10px;
-        padding: 3px 4px;
-    }
-
-    .modal-contenido {
-        padding: 16px;
-        border-radius: 12px;
-    }
-
-    .acciones-modal {
-        justify-content: stretch;
-    }
-
-    .acciones-modal button {
-        flex: 1;
-    }
-
+    h1 { font-size: 18px; }
+    header { padding: 12px 8px; }
+    button { padding: 9px 12px; font-size: 13px; }
+    main { margin: 12px auto; padding: 0 8px; }
+    .barra-superior { gap: 10px; }
+    .barra-superior h2 { font-size: 15px; min-width: 0; flex: 1; }
+    .boton-añadir { max-width: 100%; margin: 14px auto; }
+    .calendario-mes { font-size: 11px; }
+    .dia-mes { min-height: 70px; padding: 4px; }
+    .evento-mes { font-size: 10px; padding: 3px 4px; }
+    .modal-contenido { padding: 16px; border-radius: 12px; }
+    .acciones-modal { justify-content: stretch; }
+    .acciones-modal button { flex: 1; }
 }
 
-/* =========================
-   MÓVIL PEQUEÑO
-   ========================= */
-
 @media (max-width: 500px) {
-
-    .botones-arrastre {
-        flex-direction: column;
-    }
-
+    .botones-arrastre { flex-direction: column; }
 }
