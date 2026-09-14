@@ -440,10 +440,10 @@ function horaAMinutos(horaTexto) {
 }
 
 /* =========================
-   VISTA SEMANAL DINÁMICA
+   VISTA SEMANAL CORREGIDA
    ========================= */
 
-const ALTURA_HORA_PX = 90; // Aumentado a 90px por hora para dar más altura a las tarjetas
+const ALTURA_HORA_PX = 90;
 
 function mostrarSemana() {
     calendario.innerHTML = "";
@@ -462,7 +462,6 @@ function mostrarSemana() {
         lunes.setDate(hoy.getDate() - (diaActual - 1));
     }
 
-    // Calcular las fechas de la semana actual
     const fechasSemana = [];
     for (let dia = 1; dia <= 7; dia++) {
         const fechaDia = new Date(lunes);
@@ -476,12 +475,10 @@ function mostrarSemana() {
         });
     }
 
-    // Filtrar eventos de la semana que NO son de "todo el día"
     const eventosSemanaConHora = horarios.filter(evento => {
         return fechasSemana.some(f => f.fechaTexto === evento.fecha) && !evento.todoElDia && evento.inicio;
     });
 
-    // Rango base predeterminado: 6:00 a 18:00
     let horaInicioRango = 6;
     let horaFinRango = 18;
 
@@ -518,7 +515,8 @@ function mostrarSemana() {
     cuerpoHoras.className = "cuerpo-horas";
     cuerpoHoras.style.height = `${alturaTotalPx}px`;
 
-    for (let h = horaInicioRango; h <= horaFinRango; h++) {
+    // CORRECCIÓN: Solamente renderizamos los bloques desde horaInicioRango hasta horaFinRango - 1
+    for (let h = horaInicioRango; h < horaFinRango; h++) {
         const marcaHora = document.createElement("div");
         marcaHora.className = "marca-hora";
         marcaHora.style.height = `${ALTURA_HORA_PX}px`;
@@ -535,7 +533,6 @@ function mostrarSemana() {
 
         hacerZonaDeSoltar(columna, fInfo.fechaTexto);
 
-        // Cabecera del día
         const cabecera = document.createElement("div");
         cabecera.className = "cabecera-dia-semana";
 
@@ -544,11 +541,9 @@ function mostrarSemana() {
         nombre.textContent = `${nombresDias[fInfo.fechaObjeto.getDay()]} ${fInfo.fechaObjeto.getDate()}/${fInfo.fechaObjeto.getMonth() + 1}`;
         cabecera.appendChild(nombre);
 
-        // Sección "Todo el día" (arriba)
         const areaTodoElDia = document.createElement("div");
         areaTodoElDia.className = "area-todo-el-dia";
 
-        // Rejilla de horas
         const rejillaHoras = document.createElement("div");
         rejillaHoras.className = "rejilla-horas";
         rejillaHoras.style.height = `${alturaTotalPx}px`;
@@ -582,12 +577,11 @@ function mostrarSemana() {
                 const minutosInicio = horaAMinutos(evento.inicio);
                 const minutosFin = horaAMinutos(evento.fin);
                 
-                // Desplazamiento desde el inicio del rango ajustado
                 const minutosDesdeInicioRango = minutosInicio - (horaInicioRango * 60);
                 const duracionMinutos = minutosFin - minutosInicio;
 
                 const topPx = (minutosDesdeInicioRango / 60) * ALTURA_HORA_PX;
-                const heightPx = Math.max((duracionMinutos / 60) * ALTURA_HORA_PX, 35); // Mínimo 35px para legibilidad
+                const heightPx = Math.max((duracionMinutos / 60) * ALTURA_HORA_PX, 35);
 
                 elemento.style.top = `${topPx}px`;
                 elemento.style.height = `${heightPx}px`;
