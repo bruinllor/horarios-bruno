@@ -20,32 +20,41 @@ body {
     color: var(--texto);
 }
 
+/* =========================
+   CABECERA CENTRADA
+   ========================= */
+
 header {
     background: var(--bg-panel);
     padding: 16px;
     border-bottom: 1px solid var(--borde);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     width: 100%;
+}
+
+.header-contenedor {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    text-align: center !important;
 }
 
 h1 {
-    margin: 0 0 10px;
+    margin: 0 0 10px 0 !important;
     font-size: 22px;
-    text-align: center;
+    text-align: center !important;
+    width: 100% !important;
 }
 
-.selector,
 .vistas {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 8px auto 0 auto !important;
+    width: 100% !important;
 }
 
 button {
