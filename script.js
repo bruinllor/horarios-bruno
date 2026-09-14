@@ -707,25 +707,37 @@ function mostrarMes() {
 }
 
 /* =========================
-   CONTROLES DE TIEMPO (TAB E INCOMPLETOS)
+   AUTORRELLENADO INTELIGENTE DE HORAS Y TAB
    ========================= */
 
 function normalizarHora(input) {
     let val = input.value.trim();
     if (!val) return;
-    
-    // Si solo escriben la hora (ej. "8" o "08")
+
+    // Si escriben solo un número o dos (ej. "8" o "14") -> "08:00" o "14:00"
     if (/^\d{1,2}$/.test(val)) {
         input.value = val.padStart(2, "0") + ":00";
+        return;
     }
-    // Si escriben la hora y dos puntos (ej. "8:" o "08:")
-    else if (/^\d{1,2}:$/.test(val)) {
-        input.value = val.slice(0, -1).padStart(2, "0") + ":00";
+
+    // Si escriben 3 dígitos (ej. "930") -> "09:30"
+    if (/^\d{3}$/.test(val)) {
+        input.value = "0" + val[0] + ":" + val.slice(1);
+        return;
     }
-    // Si escriben hora y un solo dígito de minutos (ej. "8:5")
-    else if (/^\d{1,2}:\d{1}$/.test(val)) {
+
+    // Si escriben 4 dígitos (ej. "1430") -> "14:30"
+    if (/^\d{4}$/.test(val)) {
+        input.value = val.slice(0, 2) + ":" + val.slice(2);
+        return;
+    }
+
+    // Si escriben con dos puntos (ej. "8:", "8:5", "08:3")
+    if (val.includes(":")) {
         let partes = val.split(":");
-        input.value = partes[0].padStart(2, "0") + ":" + partes[1].padEnd(2, "0");
+        let h = partes[0].trim().padStart(2, "0") || "00";
+        let m = partes[1].trim().padEnd(2, "0") || "00";
+        input.value = h + ":" + m;
     }
 }
 
