@@ -219,29 +219,21 @@ main {
 }
 
 /* =========================
-   REGLAS PARA BORDE EN EVENTOS "TODO EL DÍA"
+   REGLA INFALIBLE PARA BORDE EN EVENTOS "TODO EL DÍA"
    ========================= */
 
-.dia.dia-con-evento-todo-dia,
-.dia.dia-con-evento-todo-dia:first-of-type,
-.dia.dia-con-evento-todo-dia:last-child {
-    border-left: 3px solid var(--color-borde-dia) !important;
-    border-right: 3px solid var(--color-borde-dia) !important;
-    z-index: 20;
-}
-
-.dia.dia-con-evento-todo-dia .cabecera-dia-semana {
-    border-top: 3px solid var(--color-borde-dia) !important;
-}
-
-.dia.dia-con-evento-todo-dia .rejilla-horas {
-    border-bottom: 3px solid var(--color-borde-dia) !important;
-}
-
-.dia-mes.dia-con-evento-todo-dia {
-    box-shadow: inset 0 0 0 3px var(--color-borde-dia) !important;
-    position: relative;
-    z-index: 10;
+.dia.dia-con-evento-todo-dia::after,
+.dia-mes.dia-con-evento-todo-dia::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    outline: 3px solid var(--color-borde-dia) !important;
+    outline-offset: -3px !important;
+    pointer-events: none;
+    z-index: 50 !important;
 }
 
 .evento-posicionado {
