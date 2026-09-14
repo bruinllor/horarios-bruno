@@ -141,6 +141,7 @@ main {
 
 .cuerpo-horas {
     position: relative;
+    border-bottom: 1px solid var(--borde);
 }
 
 .marca-hora {
@@ -148,8 +149,13 @@ main {
     color: var(--texto-suave);
     text-align: center;
     line-height: 12px;
-    padding-top: 4px;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    padding-top: 6px;
+    border-bottom: 1px dashed var(--borde);
+    box-sizing: border-box;
+}
+
+.marca-hora:last-child {
+    border-bottom: 1px solid var(--borde);
 }
 
 .dia {
@@ -203,10 +209,12 @@ main {
 .rejilla-horas {
     position: relative;
     background: var(--bg-panel);
+    border-bottom: 1px solid var(--borde);
 }
 
 .linea-hora {
     border-bottom: 1px solid var(--borde);
+    box-sizing: border-box;
 }
 
 .evento-posicionado {
