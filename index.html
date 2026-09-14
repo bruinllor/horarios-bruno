@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis horarios</title>
     <style>html { background: #0f1115; }</style>
-    <!-- Incrementamos v=10 para obligar al navegador a descargar los nuevos estilos -->
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
     <header>
@@ -36,8 +35,8 @@
             + Añadir evento
         </button>
         <p class="instruccion-arrastre">
-    Doble clic / toque rápido para tachar. Arrastra para mover o copiar.
-</p>
+            Doble clic / doble toque para tachar. Arrastra para mover o copiar.
+        </p>
         <div id="calendario"></div>
     </main>
     <!-- MODAL AÑADIR / EDITAR -->
@@ -92,15 +91,6 @@
                 id="colorEvento"
                 value="#6366f1"
             >
-            <div class="checkbox-completado-modal">
-                <input
-                    type="checkbox"
-                    id="completadoEvento"
-                >
-                <label for="completadoEvento">
-                    Completada
-                </label>
-            </div>
             <div class="acciones-modal">
                 <button
                     id="botonEliminar"
@@ -148,6 +138,6 @@
             </div>
         </div>
     </div>
-    <script type="module" src="script.js?v=11"></script>
+    <script type="module" src="script.js?v=12"></script>
 </body>
 </html>
