@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis horarios</title>
     <style>html { background: #0f1115; }</style>
-    <link rel="stylesheet" href="style.css?v=103">
+    <link rel="stylesheet" href="style.css?v=80">
 </head>
 <body>
     <header>
@@ -66,15 +66,19 @@
                 Hora de inicio
             </label>
             <input
-                type="time"
+                type="text"
                 id="horaInicio"
+                placeholder="HH:MM"
+                maxlength="5"
             >
             <label for="horaFin">
                 Hora de finalización
             </label>
             <input
-                type="time"
+                type="text"
                 id="horaFin"
+                placeholder="HH:MM"
+                maxlength="5"
             >
             <div class="checkbox-todo-dia">
                 <input
@@ -140,6 +144,6 @@
             </div>
         </div>
     </div>
-    <script type="module" src="script.js?v=60"></script>
+    <script type="module" src="script.js?v=110"></script>
 </body>
 </html>
