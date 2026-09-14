@@ -434,7 +434,17 @@ function hacerZonaDeSoltar(elemento, fechaTexto) {
 }
 
 /* =========================
-   VISTA SEMANAL
+   CONVERSIÓN DE HORAS A MINUTOS
+   ========================= */
+
+function horaAMinutos(horaTexto) {
+    if (!horaTexto) return 0;
+    const [h, m] = horaTexto.split(":").map(Number);
+    return h * 60 + (m || 0);
+}
+
+/* =========================
+   VISTA SEMANAL CON LÍNEA DE TIEMPO Y CABECERA "TODO EL DÍA"
    ========================= */
 
 function mostrarSemana() {
@@ -454,6 +464,27 @@ function mostrarSemana() {
         lunes.setDate(hoy.getDate() - (diaActual - 1));
     }
 
+    // 1. COLUMNA IZQUIERDA (HORAS)
+    const columnaHoras = document.createElement("div");
+    columnaHoras.className = "columna-horas";
+
+    const vacioHeader = document.createElement("div");
+    vacioHeader.className = "header-hora-vacio";
+    columnaHoras.appendChild(vacioHeader);
+
+    const cuerpoHoras = document.createElement("div");
+    cuerpoHoras.className = "cuerpo-horas";
+
+    for (let h = 0; h < 24; h++) {
+        const marcaHora = document.createElement("div");
+        marcaHora.className = "marca-hora";
+        marcaHora.textContent = `${String(h).padStart(2, "0")}:00`;
+        cuerpoHoras.appendChild(marcaHora);
+    }
+    columnaHoras.appendChild(cuerpoHoras);
+    contenedor.appendChild(columnaHoras);
+
+    // 2. COLUMNAS DE DÍAS (LUNES A DOMINGO)
     for (let dia = 1; dia <= 7; dia++) {
         const columna = document.createElement("div");
         columna.className = "dia";
@@ -468,20 +499,30 @@ function mostrarSemana() {
 
         hacerZonaDeSoltar(columna, fechaTexto);
 
+        // Cabecera del día
+        const cabecera = document.createElement("div");
+        cabecera.className = "cabecera-dia-semana";
+
         const nombre = document.createElement("div");
         nombre.className = "nombre-dia";
         nombre.textContent = `${nombresDias[fechaDia.getDay()]} ${fechaDia.getDate()}/${fechaDia.getMonth() + 1}`;
+        cabecera.appendChild(nombre);
 
-        const eventos = document.createElement("div");
-        eventos.className = "eventos";
+        // Sección "Todo el día" (arriba del todo)
+        const areaTodoElDia = document.createElement("div");
+        areaTodoElDia.className = "area-todo-el-dia";
+
+        // Cuerpo de las horas del día (con líneas horizontales)
+        const rejillaHoras = document.createElement("div");
+        rejillaHoras.className = "rejilla-horas";
+
+        for (let h = 0; h < 24; h++) {
+            const lineaHora = document.createElement("div");
+            lineaHora.className = "linea-hora";
+            rejillaHoras.appendChild(lineaHora);
+        }
 
         const eventosDia = horarios.filter(evento => evento.fecha === fechaTexto);
-
-        eventosDia.sort(function (a, b) {
-            if (a.todoElDia && !b.todoElDia) return -1;
-            if (!a.todoElDia && b.todoElDia) return 1;
-            return (a.inicio || "").localeCompare(b.inicio || "");
-        });
 
         eventosDia.forEach(function (evento) {
             const elemento = document.createElement("div");
@@ -490,27 +531,42 @@ function mostrarSemana() {
             if (evento.completado) {
                 elemento.classList.add("completado");
             }
-
             elemento.style.background = evento.color;
 
-            const horario = evento.todoElDia
-                ? "Todo el día"
-                : `${evento.inicio} - ${evento.fin}`;
+            if (evento.todoElDia) {
+                // Evento Arriba del todo
+                elemento.classList.add("evento-todo-dia");
+                elemento.innerHTML = `<strong>${evento.nombre}</strong>`;
+                hacerArrastrable(elemento, evento);
+                areaTodoElDia.appendChild(elemento);
+            } else {
+                // Evento en su hora correspondiente (60px por hora = 1px por minuto)
+                elemento.classList.add("evento-posicionado");
 
-            const contenido = document.createElement("div");
-            contenido.className = "evento-contenido";
-            contenido.innerHTML = `
-                <strong>${evento.nombre}</strong>
-                <span>${horario}</span>
-            `;
+                const minutosInicio = horaAMinutos(evento.inicio);
+                const minutosFin = horaAMinutos(evento.fin);
+                let duracion = minutosFin - minutosInicio;
+                if (duracion <= 0) duracion = 30; // Mínimo 30 min visibles
 
-            elemento.appendChild(contenido);
-            hacerArrastrable(elemento, evento);
-            eventos.appendChild(elemento);
+                elemento.style.top = `${minutosInicio}px`;
+                elemento.style.height = `${duracion}px`;
+
+                const horario = `${evento.inicio} - ${evento.fin}`;
+                elemento.innerHTML = `
+                    <div class="evento-contenido">
+                        <strong>${evento.nombre}</strong>
+                        <span>${horario}</span>
+                    </div>
+                `;
+
+                hacerArrastrable(elemento, evento);
+                rejillaHoras.appendChild(elemento);
+            }
         });
 
-        columna.appendChild(nombre);
-        columna.appendChild(eventos);
+        cabecera.appendChild(areaTodoElDia);
+        columna.appendChild(cabecera);
+        columna.appendChild(rejillaHoras);
         contenedor.appendChild(columna);
     }
 
