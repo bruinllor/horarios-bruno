@@ -396,7 +396,7 @@ function hacerArrastrable(elemento, evento) {
             terminarArrastre(elemento);
         });
 
-        // UN CLIC: Espera 250ms por si hay un segundo clic para no abrir el modal de golpe
+        // UN CLIC: Espera 250ms por si entra un segundo clic
         elemento.addEventListener("click", function () {
             if (arrastreRealizado) return;
 
@@ -408,7 +408,7 @@ function hacerArrastrable(elemento, evento) {
             }
         });
 
-        // DOBLE CLIC: Cancela la edición y tacha/des-tacha
+        // DOBLE CLIC: Tacha/des-tacha sin abrir edición
         elemento.addEventListener("dblclick", function (e) {
             e.stopPropagation();
             if (clickTimer) {
