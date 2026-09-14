@@ -164,6 +164,7 @@ main {
     min-width: 0;
     border-right: 1px solid var(--borde);
     position: relative;
+    box-sizing: border-box;
 }
 
 .dia:first-of-type {
@@ -172,21 +173,6 @@ main {
 
 .dia:last-child {
     border-right: 1px solid var(--borde);
-}
-
-/* BORDES PARA DÍA CON EVENTO "TODO EL DÍA" EN SEMANA */
-.dia.dia-con-evento-todo-dia {
-    border-left: 3px solid var(--color-borde-dia) !important;
-    border-right: 3px solid var(--color-borde-dia) !important;
-    z-index: 5;
-}
-
-.dia.dia-con-evento-todo-dia .cabecera-dia-semana {
-    border-top: 3px solid var(--color-borde-dia) !important;
-}
-
-.dia.dia-con-evento-todo-dia .rejilla-horas {
-    border-bottom: 3px solid var(--color-borde-dia) !important;
 }
 
 .cabecera-dia-semana {
@@ -230,6 +216,32 @@ main {
 .linea-hora {
     border-bottom: 1px solid var(--borde);
     box-sizing: border-box;
+}
+
+/* =========================
+   REGLAS PARA BORDE EN EVENTOS "TODO EL DÍA"
+   ========================= */
+
+.dia.dia-con-evento-todo-dia,
+.dia.dia-con-evento-todo-dia:first-of-type,
+.dia.dia-con-evento-todo-dia:last-child {
+    border-left: 3px solid var(--color-borde-dia) !important;
+    border-right: 3px solid var(--color-borde-dia) !important;
+    z-index: 20;
+}
+
+.dia.dia-con-evento-todo-dia .cabecera-dia-semana {
+    border-top: 3px solid var(--color-borde-dia) !important;
+}
+
+.dia.dia-con-evento-todo-dia .rejilla-horas {
+    border-bottom: 3px solid var(--color-borde-dia) !important;
+}
+
+.dia-mes.dia-con-evento-todo-dia {
+    box-shadow: inset 0 0 0 3px var(--color-borde-dia) !important;
+    position: relative;
+    z-index: 10;
 }
 
 .evento-posicionado {
@@ -291,13 +303,6 @@ main {
     border-right: 1px solid var(--borde);
     border-bottom: 1px solid var(--borde);
     position: relative;
-}
-
-/* BORDE PARA DÍA CON EVENTO "TODO EL DÍA" EN MES */
-.dia-mes.dia-con-evento-todo-dia {
-    outline: 3px solid var(--color-borde-dia) !important;
-    outline-offset: -3px;
-    z-index: 5;
 }
 
 .numero-dia {
