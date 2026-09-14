@@ -440,27 +440,28 @@ function horaAMinutos(horaTexto) {
 }
 
 /* =========================
-   VISTA SEMANAL
+   VISTA SEMANAL (COORDINADA CON FECHAACTUAL)
    ========================= */
 
 const ALTURA_HORA_PX = 90;
 
 function mostrarSemana() {
     calendario.innerHTML = "";
-    tituloCalendario.textContent = "Horario semanal";
+
+    const d = new Date(fechaActual);
+    const diaActual = d.getDay();
+    let lunes = new Date(d);
+
+    if (diaActual === 0) {
+        lunes.setDate(d.getDate() - 6);
+    } else {
+        lunes.setDate(d.getDate() - (diaActual - 1));
+    }
+
+    tituloCalendario.textContent = `${nombresMeses[lunes.getMonth()]} ${lunes.getFullYear()}`;
 
     const contenedor = document.createElement("div");
     contenedor.className = "calendario-semana";
-
-    const hoy = new Date();
-    const diaActual = hoy.getDay();
-    let lunes = new Date(hoy);
-
-    if (diaActual === 0) {
-        lunes.setDate(hoy.getDate() - 6);
-    } else {
-        lunes.setDate(hoy.getDate() - (diaActual - 1));
-    }
 
     const fechasSemana = [];
     for (let dia = 1; dia <= 7; dia++) {
@@ -832,13 +833,25 @@ document.getElementById("vistaMes").onclick = function () {
     mostrarCalendario();
 };
 
+/* =========================
+   NAVEGACIÓN COORDINADA (SEMANA / MES)
+   ========================= */
+
 document.getElementById("mesAnterior").onclick = function () {
-    fechaActual.setMonth(fechaActual.getMonth() - 1);
+    if (vistaActual === "semana") {
+        fechaActual.setDate(fechaActual.getDate() - 7);
+    } else {
+        fechaActual.setMonth(fechaActual.getMonth() - 1);
+    }
     mostrarCalendario();
 };
 
 document.getElementById("mesSiguiente").onclick = function () {
-    fechaActual.setMonth(fechaActual.getMonth() + 1);
+    if (vistaActual === "semana") {
+        fechaActual.setDate(fechaActual.getDate() + 7);
+    } else {
+        fechaActual.setMonth(fechaActual.getMonth() + 1);
+    }
     mostrarCalendario();
 };
 
