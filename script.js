@@ -153,13 +153,13 @@ function soltarEvento(e, nuevaFecha) {
 }
 
 /* =========================
-   ARRASTRAR Y MANTENER (TÁCTIL / MÓVIL)
+   ARRASTRAR Y DOBLE TOQUE (TÁCTIL / MÓVIL)
    ========================= */
 
-const UMBRAL_MOVIMIENTO = 10;
-const RETARDO_PULSACION = 500;
-
+const UMBRAL_MOVIMIENTO = 8;
 let toqueArrastre = null;
+let ultimoToqueTiempo = 0;
+let toqueTimer = null;
 
 function iniciarToqueEvento(e, evento, elemento) {
     if (e.touches.length !== 1) return;
@@ -173,21 +173,9 @@ function iniciarToqueEvento(e, evento, elemento) {
         startY: toque.clientY,
         dragging: false,
         moved: false,
-        longPressActive: false,
         celdaActual: null,
-        fantasma: null,
-        timer: null
+        fantasma: null
     };
-
-    toqueArrastre.timer = setTimeout(() => {
-        if (toqueArrastre && !toqueArrastre.moved) {
-            toqueArrastre.longPressActive = true;
-            if (navigator.vibrate) {
-                navigator.vibrate(40);
-            }
-            iniciarArrastreTactil();
-        }
-    }, RETARDO_PULSACION);
 }
 
 function iniciarArrastreTactil() {
@@ -196,6 +184,10 @@ function iniciarArrastreTactil() {
     toqueArrastre.dragging = true;
     const original = toqueArrastre.elementoOriginal;
     original.classList.add("arrastrando");
+
+    if (navigator.vibrate) {
+        navigator.vibrate(30);
+    }
 
     const fantasma = original.cloneNode(true);
     fantasma.classList.add("fantasma-arrastre");
@@ -240,7 +232,7 @@ function moverToqueEvento(e) {
     if (!toqueArrastre.dragging) {
         if (Math.abs(dx) > UMBRAL_MOVIMIENTO || Math.abs(dy) > UMBRAL_MOVIMIENTO) {
             toqueArrastre.moved = true;
-            clearTimeout(toqueArrastre.timer);
+            iniciarArrastreTactil();
         }
         return;
     }
@@ -253,30 +245,41 @@ function moverToqueEvento(e) {
 function finalizarToqueEvento(e) {
     if (!toqueArrastre) return;
 
-    clearTimeout(toqueArrastre.timer);
-
     const estabaArrastrando = toqueArrastre.dragging;
     const seMovio = toqueArrastre.moved;
-    const seMantuvoPulsado = toqueArrastre.longPressActive;
     const evento = toqueArrastre.evento;
     const celda = toqueArrastre.celdaActual;
     const original = toqueArrastre.elementoOriginal;
     const fantasma = toqueArrastre.fantasma;
 
     if (fantasma) fantasma.remove();
-
     document.querySelectorAll(".dia-destino").forEach(el => el.classList.remove("dia-destino"));
 
     if (estabaArrastrando && celda && celda.dataset.fecha) {
         terminarArrastre(original);
         manejarSoltarEvento(evento.id, celda.dataset.fecha);
-    } else if (seMantuvoPulsado && !seMovio) {
-        e.preventDefault();
-        terminarArrastre(original);
-        alternarCompletado(evento);
     } else if (!seMovio) {
-        e.preventDefault();
-        editarEvento(evento);
+        // Lógica de Doble Toque en Móvil
+        const ahora = Date.now();
+        const diferenciaTiempo = ahora - ultimoToqueTiempo;
+
+        if (diferenciaTiempo < 300 && diferenciaTiempo > 0) {
+            // DOBLE TOQUE: Cancela edición y tacha la tarea
+            if (toqueTimer) {
+                clearTimeout(toqueTimer);
+                toqueTimer = null;
+            }
+            e.preventDefault();
+            alternarCompletado(evento);
+            ultimoToqueTiempo = 0;
+        } else {
+            // TOQUE SIMPLE: Espera por si viene un segundo toque para editar
+            ultimoToqueTiempo = ahora;
+            toqueTimer = setTimeout(() => {
+                editarEvento(evento);
+                toqueTimer = null;
+            }, 300);
+        }
     }
 
     toqueArrastre = null;
@@ -284,8 +287,6 @@ function finalizarToqueEvento(e) {
 
 function cancelarToqueEvento() {
     if (!toqueArrastre) return;
-
-    clearTimeout(toqueArrastre.timer);
     if (toqueArrastre.fantasma) toqueArrastre.fantasma.remove();
     if (toqueArrastre.dragging) terminarArrastre(toqueArrastre.elementoOriginal);
 
@@ -384,7 +385,6 @@ const esDispositivoTactil = ("ontouchstart" in window) || (navigator.maxTouchPoi
 function hacerArrastrable(elemento, evento) {
     if (!esDispositivoTactil) {
         elemento.draggable = true;
-
         let clickTimer = null;
 
         elemento.addEventListener("dragstart", function (e) {
@@ -396,7 +396,6 @@ function hacerArrastrable(elemento, evento) {
             terminarArrastre(elemento);
         });
 
-        // UN CLIC: Espera 250ms por si entra un segundo clic
         elemento.addEventListener("click", function () {
             if (arrastreRealizado) return;
 
@@ -408,7 +407,6 @@ function hacerArrastrable(elemento, evento) {
             }
         });
 
-        // DOBLE CLIC: Tacha/des-tacha sin abrir edición
         elemento.addEventListener("dblclick", function (e) {
             e.stopPropagation();
             if (clickTimer) {
@@ -421,7 +419,7 @@ function hacerArrastrable(elemento, evento) {
         return;
     }
 
-    // Dispositivos Táctiles
+    // Eventos táctiles para móviles
     elemento.addEventListener("touchstart", function (e) {
         iniciarToqueEvento(e, evento, elemento);
     }, { passive: true });
