@@ -99,7 +99,7 @@ main {
 }
 
 /* =========================
-   VISTA SEMANAL REESTRUCTURADA
+   VISTA SEMANAL
    ========================= */
 
 .calendario-semana {
@@ -123,12 +123,10 @@ main {
 }
 
 .cuerpo-horas {
-    height: 1440px;
     position: relative;
 }
 
 .marca-hora {
-    height: 60px;
     font-size: 11px;
     color: var(--texto-suave);
     text-align: center;
@@ -176,20 +174,18 @@ main {
 
 .evento-todo-dia {
     font-size: 12px;
-    padding: 4px 6px;
+    padding: 6px 8px;
     border-radius: 5px;
     color: white;
     cursor: grab;
 }
 
 .rejilla-horas {
-    height: 1440px;
     position: relative;
     background: var(--bg-panel);
 }
 
 .linea-hora {
-    height: 60px;
     border-bottom: 1px solid var(--borde);
 }
 
@@ -198,7 +194,7 @@ main {
     left: 4px;
     right: 4px;
     border-radius: 6px;
-    padding: 4px 6px;
+    padding: 6px 8px;
     color: white;
     cursor: grab;
     overflow: hidden;
@@ -210,19 +206,19 @@ main {
     display: flex;
     flex-direction: column;
     height: 100%;
-    font-size: 11px;
-    line-height: 1.2;
+    font-size: 12px;
+    line-height: 1.3;
 }
 
 .evento-posicionado strong {
-    font-size: 12px;
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .evento-posicionado span {
-    font-size: 10px;
+    font-size: 11px;
     opacity: 0.9;
 }
 
