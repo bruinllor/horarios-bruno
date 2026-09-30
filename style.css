@@ -48,6 +48,7 @@ h1 {
     width: 100% !important;
 }
 
+.secciones,
 .vistas {
     display: flex !important;
     justify-content: center !important;
@@ -80,6 +81,10 @@ main {
     max-width: 1300px;
     margin: 20px auto;
     padding: 0 12px;
+}
+
+.seccion-oculta {
+    display: none;
 }
 
 .barra-superior {
@@ -366,6 +371,115 @@ main {
 }
 
 /* =========================
+   TABLERO DE ASIGNATURAS
+   ========================= */
+
+#tablero {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.columna-tablero {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.cabecera-columna {
+    background: var(--bg-panel-alt);
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid var(--borde);
+}
+
+.lista-tarjetas {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 70px;
+}
+
+.lista-tarjetas.columna-destino {
+    background: rgba(99, 102, 241, 0.08);
+    outline: 2px dashed var(--acento);
+    outline-offset: -2px;
+    border-radius: 8px;
+}
+
+.tarjeta-asignatura {
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: grab;
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.tarjeta-asignatura:active {
+    cursor: grabbing;
+}
+
+.arrastrando-tarjeta {
+    opacity: 0.5;
+}
+
+.tarjeta-contenido {
+    flex: 1;
+    min-width: 0;
+}
+
+.tarjeta-contenido strong {
+    display: block;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.tarjeta-descripcion {
+    margin: 0;
+    font-size: 12px;
+    color: var(--texto-suave);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.barra-progreso-vertical {
+    width: 10px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.relleno-progreso {
+    width: 100%;
+    background: var(--acento);
+    border-radius: 5px;
+    transition: height 0.2s ease;
+}
+
+.porcentaje-progreso {
+    font-size: 10px;
+    color: var(--texto-suave);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* =========================
    MODAL AÑADIR / EDITAR
    ========================= */
 
@@ -408,7 +522,8 @@ main {
 }
 
 .modal-contenido input,
-.modal-contenido select {
+.modal-contenido select,
+.modal-contenido textarea {
     width: 100%;
     padding: 10px;
     background: var(--bg-panel-alt);
@@ -416,11 +531,28 @@ main {
     border-radius: 7px;
     font-size: 15px;
     color: var(--texto);
+    font-family: inherit;
+}
+
+.modal-contenido textarea {
+    resize: vertical;
 }
 
 .modal-contenido input[type="date"],
 .modal-contenido input[type="time"] {
     color-scheme: dark;
+}
+
+.modal-contenido input[type="range"] {
+    padding: 0;
+    accent-color: var(--acento);
+}
+
+.valor-rango {
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 13px;
+    margin-top: 4px;
 }
 
 /* =========================
@@ -464,7 +596,8 @@ main {
     color: white;
 }
 
-#botonEliminar {
+#botonEliminar,
+#botonEliminarAsignatura {
     background: var(--peligro);
     color: white;
 }
@@ -577,6 +710,11 @@ main {
         overflow-x: auto;
         grid-template-columns: 50px repeat(7, minmax(130px, 1fr));
         padding: 0 8px;
+    }
+
+    #tablero {
+        overflow-x: auto;
+        grid-template-columns: repeat(4, minmax(230px, 1fr));
     }
 }
 
