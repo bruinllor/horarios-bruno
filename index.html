@@ -8,12 +8,20 @@
     <link rel="icon" type="image/png" href="icono.png?v=1">
 
     <style>html { background: #0f1115; }</style>
-    <link rel="stylesheet" href="style.css?v=81">
+    <link rel="stylesheet" href="style.css?v=82">
 </head>
 <body>
     <header>
         <div class="header-contenedor">
             <h1>Mis horarios</h1>
+            <div class="secciones">
+                <button id="seccionCalendarioBtn" class="active">
+                    Calendario
+                </button>
+                <button id="seccionTableroBtn">
+                    Tablero
+                </button>
+            </div>
             <div class="vistas">
                 <button id="vistaSemana" class="active">
                     Semana
@@ -24,7 +32,12 @@
             </div>
         </div>
     </header>
-    <main>
+
+    <!-- =========================
+         SECCIÓN CALENDARIO
+         ========================= -->
+
+    <main id="seccionCalendario">
         <div class="barra-superior">
             <button id="mesAnterior">
                 ‹
@@ -45,7 +58,23 @@
         <div id="calendario"></div>
     </main>
 
-    <!-- MODAL AÑADIR / EDITAR -->
+    <!-- =========================
+         SECCIÓN TABLERO
+         ========================= -->
+
+    <main id="seccionTablero" class="seccion-oculta">
+        <button
+            id="btnAnadirAsignatura"
+            class="boton-añadir">
+            + Añadir asignatura
+        </button>
+        <p class="instruccion-arrastre">
+            Arrastra las tarjetas para moverlas de columna o para reordenarlas
+        </p>
+        <div id="tablero"></div>
+    </main>
+
+    <!-- MODAL AÑADIR / EDITAR EVENTO -->
     <div id="modal" class="modal oculto">
         <div class="modal-contenido">
             <h2 id="tituloModal">
@@ -150,6 +179,59 @@
         </div>
     </div>
 
-    <script type="module" src="script.js?v=81"></script>
+    <!-- MODAL AÑADIR / EDITAR ASIGNATURA -->
+    <div id="modalAsignatura" class="modal oculto">
+        <div class="modal-contenido">
+            <h2 id="tituloModalAsignatura">
+                Añadir asignatura
+            </h2>
+            <label for="nombreAsignatura">
+                Nombre
+            </label>
+            <input
+                type="text"
+                id="nombreAsignatura"
+                placeholder="Ej. Historia"
+            >
+            <label for="descripcionAsignatura">
+                Descripción
+            </label>
+            <textarea
+                id="descripcionAsignatura"
+                rows="3"
+                placeholder="Temario, notas, lo que quieras..."
+            ></textarea>
+            <label for="progresoAsignatura">
+                Progreso
+            </label>
+            <input
+                type="range"
+                id="progresoAsignatura"
+                min="0"
+                max="100"
+                value="0"
+            >
+            <div id="valorProgresoAsignatura" class="valor-rango">
+                0%
+            </div>
+            <div class="acciones-modal">
+                <button
+                    id="botonEliminarAsignatura"
+                    style="display: none; background: #dc2626; color: white;">
+                    Eliminar
+                </button>
+                <button id="cancelarAsignatura">
+                    Cancelar
+                </button>
+                <button
+                    id="guardarAsignatura"
+                    class="guardar">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js?v=82"></script>
 </body>
 </html>
