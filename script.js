@@ -23,6 +23,7 @@ const firebaseConfig = {
 const appFirebase = initializeApp(firebaseConfig);
 const db = getDatabase(appFirebase);
 const horariosRef = ref(db, "horarios");
+const asignaturasRef = ref(db, "asignaturas");
 
 let vistaActual = "semana";
 let fechaActual = new Date();
@@ -909,4 +910,360 @@ document.getElementById("mesSiguiente").onclick = function () {
     mostrarCalendario();
 };
 
+/* =========================================================
+   CAMBIAR SECCIÓN (CALENDARIO / TABLERO)
+   ========================================================= */
+
+document.getElementById("seccionCalendarioBtn").onclick = function () {
+    document.getElementById("seccionCalendario").classList.remove("seccion-oculta");
+    document.getElementById("seccionTablero").classList.add("seccion-oculta");
+    document.getElementById("seccionCalendarioBtn").classList.add("active");
+    document.getElementById("seccionTableroBtn").classList.remove("active");
+};
+
+document.getElementById("seccionTableroBtn").onclick = function () {
+    document.getElementById("seccionTablero").classList.remove("seccion-oculta");
+    document.getElementById("seccionCalendario").classList.add("seccion-oculta");
+    document.getElementById("seccionTableroBtn").classList.add("active");
+    document.getElementById("seccionCalendarioBtn").classList.remove("active");
+    mostrarTablero();
+};
+
+/* =========================================================
+   TABLERO DE ASIGNATURAS
+   ========================================================= */
+
+let asignaturas = [];
+let asignaturaEditando = null;
+let asignaturaArrastrada = null;
+
+const columnasTablero = [
+    { id: "espera", titulo: "En espera" },
+    { id: "empezado", titulo: "Empezado" },
+    { id: "repasar", titulo: "Solo repasar" },
+    { id: "terminado", titulo: "Terminado" }
+];
+
+const modalAsignatura = document.getElementById("modalAsignatura");
+const nombreAsignaturaInput = document.getElementById("nombreAsignatura");
+const descripcionAsignaturaInput = document.getElementById("descripcionAsignatura");
+const progresoAsignaturaInput = document.getElementById("progresoAsignatura");
+const valorProgresoAsignatura = document.getElementById("valorProgresoAsignatura");
+
+/* =========================
+   GUARDAR Y ESCUCHAR TABLERO (FIREBASE)
+   ========================= */
+
+function guardarTablero() {
+    set(asignaturasRef, asignaturas).catch(function (error) {
+        console.error("Error al guardar el tablero en Firebase:", error);
+    });
+}
+
+function escucharTablero() {
+    onValue(asignaturasRef, function (snapshot) {
+        const datos = snapshot.val();
+
+        if (!datos) {
+            asignaturas = [];
+        } else if (Array.isArray(datos)) {
+            asignaturas = datos;
+        } else {
+            asignaturas = Object.values(datos);
+        }
+
+        mostrarTablero();
+    }, function (error) {
+        console.error("Error al leer el tablero de Firebase:", error);
+    });
+}
+
+/* =========================
+   MOSTRAR TABLERO
+   ========================= */
+
+function mostrarTablero() {
+    const contenedorTablero = document.getElementById("tablero");
+    contenedorTablero.innerHTML = "";
+
+    columnasTablero.forEach(function (columna) {
+        const columnaElemento = document.createElement("div");
+        columnaElemento.className = "columna-tablero";
+
+        const cabecera = document.createElement("div");
+        cabecera.className = "cabecera-columna";
+        cabecera.textContent = columna.titulo;
+        columnaElemento.appendChild(cabecera);
+
+        const listaTarjetas = document.createElement("div");
+        listaTarjetas.className = "lista-tarjetas";
+
+        const asignaturasColumna = asignaturas
+            .filter(a => a.columna === columna.id)
+            .sort((a, b) => a.orden - b.orden);
+
+        asignaturasColumna.forEach(function (asignatura) {
+            listaTarjetas.appendChild(crearTarjetaAsignatura(asignatura));
+        });
+
+        listaTarjetas.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            listaTarjetas.classList.add("columna-destino");
+        });
+
+        listaTarjetas.addEventListener("dragleave", function () {
+            listaTarjetas.classList.remove("columna-destino");
+        });
+
+        listaTarjetas.addEventListener("drop", function (e) {
+            e.preventDefault();
+            listaTarjetas.classList.remove("columna-destino");
+            soltarAsignaturaAlFinal(columna.id);
+        });
+
+        columnaElemento.appendChild(listaTarjetas);
+        contenedorTablero.appendChild(columnaElemento);
+    });
+}
+
+/* =========================
+   CREAR TARJETA
+   ========================= */
+
+function crearTarjetaAsignatura(asignatura) {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "tarjeta-asignatura";
+    tarjeta.draggable = true;
+
+    const contenido = document.createElement("div");
+    contenido.className = "tarjeta-contenido";
+
+    const nombre = document.createElement("strong");
+    nombre.textContent = asignatura.nombre;
+    contenido.appendChild(nombre);
+
+    if (asignatura.descripcion) {
+        const descripcion = document.createElement("p");
+        descripcion.className = "tarjeta-descripcion";
+        descripcion.textContent = asignatura.descripcion;
+        contenido.appendChild(descripcion);
+    }
+
+    tarjeta.appendChild(contenido);
+
+    if (asignatura.columna === "empezado") {
+        const barra = document.createElement("div");
+        barra.className = "barra-progreso-vertical";
+
+        const relleno = document.createElement("div");
+        relleno.className = "relleno-progreso";
+        relleno.style.height = (asignatura.progreso || 0) + "%";
+        barra.appendChild(relleno);
+
+        const porcentaje = document.createElement("span");
+        porcentaje.className = "porcentaje-progreso";
+        porcentaje.textContent = (asignatura.progreso || 0) + "%";
+
+        tarjeta.appendChild(barra);
+        tarjeta.appendChild(porcentaje);
+    }
+
+    let arrastreEnCurso = false;
+
+    tarjeta.addEventListener("click", function () {
+        if (arrastreEnCurso) return;
+        editarAsignatura(asignatura);
+    });
+
+    tarjeta.addEventListener("dragstart", function (e) {
+        asignaturaArrastrada = asignatura.id;
+        arrastreEnCurso = true;
+        tarjeta.classList.add("arrastrando-tarjeta");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(asignatura.id));
+    });
+
+    tarjeta.addEventListener("dragend", function () {
+        tarjeta.classList.remove("arrastrando-tarjeta");
+        setTimeout(function () {
+            arrastreEnCurso = false;
+        }, 50);
+        asignaturaArrastrada = null;
+    });
+
+    tarjeta.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (asignaturaArrastrada === null || asignaturaArrastrada === asignatura.id) {
+            return;
+        }
+
+        const rect = tarjeta.getBoundingClientRect();
+        const mitad = rect.top + rect.height / 2;
+        const antes = e.clientY < mitad;
+
+        moverAsignaturaJuntoA(asignaturaArrastrada, asignatura.id, antes);
+    });
+
+    tarjeta.addEventListener("drop", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    return tarjeta;
+}
+
+/* =========================
+   MOVER / REORDENAR TARJETAS
+   ========================= */
+
+function moverAsignaturaJuntoA(idArrastrada, idReferencia, antes) {
+    if (idArrastrada === idReferencia) return;
+
+    const indiceArrastrada = asignaturas.findIndex(a => a.id === idArrastrada);
+    const indiceReferencia = asignaturas.findIndex(a => a.id === idReferencia);
+
+    if (indiceArrastrada === -1 || indiceReferencia === -1) return;
+
+    const posicionDeseada = antes ? indiceReferencia : indiceReferencia + 1;
+
+    if (posicionDeseada === indiceArrastrada || posicionDeseada === indiceArrastrada + 1) {
+        return;
+    }
+
+    const arrastrada = asignaturas[indiceArrastrada];
+    const referencia = asignaturas[indiceReferencia];
+
+    asignaturas.splice(indiceArrastrada, 1);
+
+    const nuevoIndiceReferencia = asignaturas.findIndex(a => a.id === idReferencia);
+    const indiceInsercion = antes ? nuevoIndiceReferencia : nuevoIndiceReferencia + 1;
+
+    arrastrada.columna = referencia.columna;
+
+    asignaturas.splice(indiceInsercion, 0, arrastrada);
+
+    reindexarOrdenTablero();
+    mostrarTablero();
+}
+
+function soltarAsignaturaAlFinal(columnaId) {
+    if (!asignaturaArrastrada) return;
+
+    const arrastrada = asignaturas.find(a => a.id === asignaturaArrastrada);
+    if (!arrastrada) return;
+
+    asignaturas = asignaturas.filter(a => a.id !== asignaturaArrastrada);
+    arrastrada.columna = columnaId;
+    asignaturas.push(arrastrada);
+
+    reindexarOrdenTablero();
+    mostrarTablero();
+}
+
+function reindexarOrdenTablero() {
+    columnasTablero.forEach(function (columna) {
+        let contador = 0;
+        asignaturas
+            .filter(a => a.columna === columna.id)
+            .forEach(function (a) {
+                a.orden = contador;
+                contador++;
+            });
+    });
+
+    guardarTablero();
+}
+
+/* =========================
+   MODAL ASIGNATURA
+   ========================= */
+
+progresoAsignaturaInput.addEventListener("input", function () {
+    valorProgresoAsignatura.textContent = progresoAsignaturaInput.value + "%";
+});
+
+function abrirModalAsignatura() {
+    asignaturaEditando = null;
+    document.getElementById("tituloModalAsignatura").textContent = "Añadir asignatura";
+    nombreAsignaturaInput.value = "";
+    descripcionAsignaturaInput.value = "";
+    progresoAsignaturaInput.value = 0;
+    valorProgresoAsignatura.textContent = "0%";
+    document.getElementById("botonEliminarAsignatura").style.display = "none";
+    modalAsignatura.classList.remove("oculto");
+}
+
+function editarAsignatura(asignatura) {
+    asignaturaEditando = asignatura;
+    document.getElementById("tituloModalAsignatura").textContent = "Editar asignatura";
+    nombreAsignaturaInput.value = asignatura.nombre;
+    descripcionAsignaturaInput.value = asignatura.descripcion || "";
+    progresoAsignaturaInput.value = asignatura.progreso || 0;
+    valorProgresoAsignatura.textContent = (asignatura.progreso || 0) + "%";
+    document.getElementById("botonEliminarAsignatura").style.display = "block";
+    modalAsignatura.classList.remove("oculto");
+}
+
+function cerrarModalAsignatura() {
+    modalAsignatura.classList.add("oculto");
+    asignaturaEditando = null;
+}
+
+function guardarAsignatura() {
+    const nombre = nombreAsignaturaInput.value.trim();
+    const descripcion = descripcionAsignaturaInput.value.trim();
+    const progreso = Number(progresoAsignaturaInput.value);
+
+    if (!nombre) {
+        alert("Ponle un nombre a la asignatura.");
+        return;
+    }
+
+    if (asignaturaEditando) {
+        asignaturaEditando.nombre = nombre;
+        asignaturaEditando.descripcion = descripcion;
+        asignaturaEditando.progreso = progreso;
+    } else {
+        const enEspera = asignaturas.filter(a => a.columna === "espera");
+
+        asignaturas.push({
+            id: Date.now() + Math.floor(Math.random() * 10000),
+            nombre: nombre,
+            descripcion: descripcion,
+            columna: "espera",
+            progreso: progreso,
+            orden: enEspera.length
+        });
+    }
+
+    guardarTablero();
+    cerrarModalAsignatura();
+    mostrarTablero();
+}
+
+function eliminarAsignatura() {
+    if (!asignaturaEditando) return;
+
+    const confirmar = confirm(`¿Quieres eliminar "${asignaturaEditando.nombre}"?`);
+    if (!confirmar) return;
+
+    asignaturas = asignaturas.filter(a => a.id !== asignaturaEditando.id);
+
+    reindexarOrdenTablero();
+    cerrarModalAsignatura();
+    mostrarTablero();
+}
+
+document.getElementById("btnAnadirAsignatura").onclick = abrirModalAsignatura;
+document.getElementById("cancelarAsignatura").onclick = cerrarModalAsignatura;
+document.getElementById("guardarAsignatura").onclick = guardarAsignatura;
+document.getElementById("botonEliminarAsignatura").onclick = eliminarAsignatura;
+
+/* =========================
+   INICIO
+   ========================= */
+
 escucharDatos();
+escucharTablero();
