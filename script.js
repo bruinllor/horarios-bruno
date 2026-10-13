@@ -34,6 +34,7 @@ let eventoPendiente = null;
 let arrastreRealizado = false;
 
 let horarios = [];
+let horariosCargados = false;
 
 /* =========================
    ELEMENTOS
@@ -77,6 +78,11 @@ const nombresMeses = [
    ========================= */
 
 function guardarDatos() {
+    // Nunca se guarda hasta haber leído antes lo que hay en Firebase (evita pisar los datos con una lista vacía)
+    if (!horariosCargados) {
+        console.warn("Guardado cancelado: los eventos todavía no se han cargado.");
+        return;
+    }
     set(horariosRef, horarios).catch(function (error) {
         console.error("Error al guardar en Firebase:", error);
     });
@@ -85,6 +91,7 @@ function guardarDatos() {
 function escucharDatos() {
     onValue(horariosRef, function (snapshot) {
         const datos = snapshot.val();
+        horariosCargados = true;
 
         if (!datos) {
             horarios = [];
@@ -1023,6 +1030,7 @@ document.getElementById("btnDividir").onclick = function () {
    ========================================================= */
 
 let asignaturas = [];
+let tableroCargado = false;
 let asignaturaEditando = null;
 let asignaturaArrastrada = null;
 
@@ -1044,6 +1052,10 @@ const valorProgresoAsignatura = document.getElementById("valorProgresoAsignatura
    ========================= */
 
 function guardarTablero() {
+    if (!tableroCargado) {
+        console.warn("Guardado cancelado: el tablero todavía no se ha cargado.");
+        return;
+    }
     set(asignaturasRef, asignaturas).catch(function (error) {
         console.error("Error al guardar el tablero en Firebase:", error);
     });
@@ -1052,6 +1064,7 @@ function guardarTablero() {
 function escucharTablero() {
     onValue(asignaturasRef, function (snapshot) {
         const datos = snapshot.val();
+        tableroCargado = true;
 
         if (!datos) {
             asignaturas = [];
@@ -1435,6 +1448,10 @@ function normalizarTemario(datos) {
 }
 
 function guardarTemario() {
+    if (!temarioCargado) {
+        console.warn("Guardado cancelado: la lista todavía no se ha cargado.");
+        return;
+    }
     set(temarioRef, temario).catch(function (error) {
         console.error("Error al guardar la lista en Firebase:", error);
     });
