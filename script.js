@@ -1432,6 +1432,11 @@ function escucharTemario() {
         mostrarTemario();
     }, function (error) {
         console.error("Error al leer la lista de Firebase:", error);
+        contenedorTemario.innerHTML = "";
+        const aviso = document.createElement("p");
+        aviso.className = "lista-vacia";
+        aviso.textContent = "No se pudo leer la lista (" + (error && error.code ? error.code : "error") + "). Revisa las reglas de Firebase.";
+        contenedorTemario.appendChild(aviso);
     });
 }
 
@@ -1822,6 +1827,9 @@ function mostrarTemario() {
    BARRA SUPERIOR: AÑADIR ASIGNATURA RÁPIDO
    ========================= */
 
+escucharTemario();
+
+try {
 const barraLista = document.createElement("div");
 barraLista.className = "lista-barra-superior";
 
@@ -1861,6 +1869,9 @@ botonNuevaAsignatura.addEventListener("click", anadirAsignaturaRapida);
 barraLista.appendChild(campoNuevaAsignatura);
 barraLista.appendChild(botonNuevaAsignatura);
 contenedorTemario.parentNode.insertBefore(barraLista, contenedorTemario);
+} catch (error) {
+    console.error("Error al crear la barra de la lista:", error);
+}
 
 /* =========================
    EVENTOS Y ARRANQUE DE LA LISTA
@@ -1884,7 +1895,6 @@ nombreTemarioInput.addEventListener("keydown", function (e) {
     }
 });
 
-escucharTemario();
 aplicarSecciones();
 
 /* =========================
