@@ -510,7 +510,7 @@ main {
 }
 
 /* =========================
-   LISTA (ASIGNATURAS CON TEMAS Y ESTADO)
+   LISTA (ASIGNATURAS CON TEMAS, PROGRESO Y CALIFICACIONES)
    ========================= */
 
 /* El botón antiguo ya no hace falta: se añade desde la barra de arriba */
@@ -542,8 +542,7 @@ main {
     border-color: var(--acento);
 }
 
-#temario,
-#notas {
+#temario {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -551,8 +550,7 @@ main {
     margin: 0 auto;
 }
 
-body.dividida #temario,
-body.dividida #notas {
+body.dividida #temario {
     max-width: none;
 }
 
@@ -675,18 +673,22 @@ body.dividida #notas {
     flex-direction: column;
 }
 
-/* Filas sin caja: solo una línea fina entre ellas */
+/* Cada tema = fila + barra de progreso, separados por una línea fina */
+.tema-item {
+    border-bottom: 1px solid var(--borde);
+    padding-bottom: 4px;
+}
+
+.tema-item:last-child {
+    border-bottom: none;
+}
+
 .tema-fila {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 4px 6px;
-    border-bottom: 1px solid var(--borde);
     border-radius: 6px;
-}
-
-.tema-fila:last-child {
-    border-bottom: none;
 }
 
 .tema-fila:hover {
@@ -757,12 +759,43 @@ body.dividida #notas {
     opacity: 0.5;
 }
 
-.tema-fila:hover .tema-borrar {
+.tema-fila:hover .tema-borrar,
+.examen-fila:hover .tema-borrar {
     opacity: 1;
 }
 
 .tema-borrar:hover {
     color: #f87171;
+}
+
+/* Barra de progreso movible de cada tema */
+.tema-progreso {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px 4px 22px;
+}
+
+.tema-progreso input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--acento);
+    cursor: pointer;
+}
+
+.tema-progreso-valor {
+    width: 38px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--texto-suave);
+}
+
+/* Asignatura completada: tachada */
+.lista-completada .lista-titulo,
+.lista-completada .lista-resumen {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    opacity: 0.55;
 }
 
 .lista-nuevo-tema {
@@ -793,6 +826,63 @@ body.dividida #notas {
     background: var(--acento);
     color: white;
     font-weight: bold;
+}
+
+/* Calificaciones de los exámenes */
+.lista-examenes {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--borde);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lista-subtitulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--texto-suave);
+}
+
+.lista-media {
+    font-weight: normal;
+    color: var(--acento);
+}
+
+.examen-fila {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.examen-nombre,
+.examen-nota {
+    padding: 7px 9px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    color: var(--texto);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.examen-nombre {
+    flex: 1;
+    min-width: 0;
+}
+
+.examen-nota {
+    width: 64px;
+    text-align: center;
+}
+
+.examen-nombre:focus,
+.examen-nota:focus {
+    outline: none;
+    border-color: var(--acento);
 }
 
 /* =========================
@@ -914,8 +1004,7 @@ body.dividida #notas {
 
 #botonEliminar,
 #botonEliminarAsignatura,
-#botonEliminarTemario,
-#botonEliminarNotas {
+#botonEliminarTemario {
     background: var(--peligro);
     color: white;
 }
@@ -1115,22 +1204,12 @@ body.dividida #tablero {
     .tema-estado {
         max-width: 110px;
     }
+
+    .examen-nota {
+        width: 56px;
+    }
 }
 
 @media (max-width: 500px) {
     .botones-arrastre { flex-direction: column; }
 }
-
-/* Progreso individual de cada tema */
-.tema-progreso-fila { flex-basis: 100%; width: 100%; padding: 0 8px 8px 16px; }
-.tema-fila { flex-wrap: wrap; }
-.tema-progreso { display: flex; align-items: center; gap: 10px; width: 100%; }
-.tema-progreso input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--acento); }
-.tema-progreso-valor { min-width: 38px; text-align: right; font-size: 12px; color: var(--texto-suave); }
-.asignatura-completada { text-decoration: line-through; opacity: .6; }
-.lista-examenes { display: flex; flex-direction: column; gap: 7px; padding: 10px 6px; border-top: 1px solid var(--borde); }
-.lista-examenes-titulo { font-size: 13px; color: var(--texto-suave); }
-.examen-fila { display: flex; gap: 8px; align-items: center; }
-.examen-fila input { min-width: 0; width: 100%; padding: 8px; background: var(--bg-panel-alt); border: 1px solid var(--borde); border-radius: 7px; color: var(--texto); font-family: inherit; }
-.examen-fila input[type="number"] { max-width: 105px; }
-@media (max-width: 500px) { .examen-fila { flex-wrap: wrap; } .examen-fila input[type="number"] { max-width: none; } }
