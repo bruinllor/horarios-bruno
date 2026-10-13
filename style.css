@@ -542,7 +542,8 @@ main {
     border-color: var(--acento);
 }
 
-#temario {
+#temario,
+#notas {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -550,7 +551,8 @@ main {
     margin: 0 auto;
 }
 
-body.dividida #temario {
+body.dividida #temario,
+body.dividida #notas {
     max-width: none;
 }
 
@@ -884,7 +886,8 @@ body.dividida #temario {
 
 #botonEliminar,
 #botonEliminarAsignatura,
-#botonEliminarTemario {
+#botonEliminarTemario,
+#botonEliminarNotas {
     background: var(--peligro);
     color: white;
 }
