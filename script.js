@@ -1879,6 +1879,15 @@ function mostrarTemario() {
 escucharTemario();
 
 try {
+// Quita cualquier campo suelto "Nueva asignatura" que hubiera ya en la página (p. ej. copiado en el HTML)
+document.querySelectorAll('input[placeholder^="Nueva asignatura"]').forEach(function (campo) {
+    const padre = campo.parentElement;
+    campo.remove();
+    if (padre && padre.children.length === 0 && padre !== document.body && padre.id !== "temario" && padre !== seccionTemario) {
+        padre.remove();
+    }
+});
+
 const barraLista = document.createElement("div");
 barraLista.className = "lista-barra-superior";
 
