@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis horarios</title>
+<link rel="icon" type="image/png" href="icono.png?v=1">
+<style>html { background: #0f1115; }</style>
+<link rel="stylesheet" href="style.css?v=85">
+</head>
+<body>
+<header>
+  <div class="header-contenedor">
+    <h1>Mis horarios</h1>
+    <div class="secciones">
+      <button id="seccionCalendarioBtn" class="active">Calendario</button>
+      <button id="seccionTableroBtn">Tablero</button>
+      <button id="seccionTemarioBtn">Lista</button>
+      <button id="btnDividir" class="btn-dividir">◫ Dividir pantalla</button>
+    </div>
+    <p id="avisoDividir" class="aviso-dividir" hidden>Pantalla dividida: pulsa dos pestañas para verlas a la vez.</p>
+    <div class="vistas">
+      <button id="vistaSemana" class="active">Semana</button>
+      <button id="vistaMes">Mes</button>
+    </div>
+  </div>
+</header>
+<div id="contenedorSecciones">
+<main id="seccionCalendario">
+  <div class="barra-superior"><button id="mesAnterior">‹</button><h2 id="tituloCalendario"></h2><button id="mesSiguiente">›</button></div>
+  <button id="btnAnadirEvento" class="boton-añadir">+ Añadir evento</button>
+  <p class="instruccion-arrastre">Doble clic / doble toque para tachar. Arrastra para mover o copiar.</p>
+  <div id="calendario"></div>
+</main>
+<main id="seccionTablero" class="seccion-oculta">
+  <button id="btnAnadirAsignatura" class="boton-añadir">+ Añadir asignatura</button>
+  <p class="instruccion-arrastre">Arrastra las tarjetas para moverlas de columna o para reordenarlas</p>
+  <div id="tablero"></div>
+</main>
+<main id="seccionTemario" class="seccion-oculta">
+  <p class="instruccion-arrastre">Dentro de cada asignatura añade sus temas, cambia su estado y registra las notas de los exámenes.</p>
+  <div id="temario"></div>
+</main>
+</div>
+
+<div id="modal" class="modal oculto"><div class="modal-contenido">
+<h2 id="tituloModal">Añadir evento</h2>
+<label for="nombreEvento">Nombre</label><input type="text" id="nombreEvento" placeholder="Ej. Matemáticas">
+<label for="fechaEvento">Fecha</label><input type="date" id="fechaEvento">
+<label for="horaInicio">Hora de inicio</label><input type="text" id="horaInicio" placeholder="HH:MM" maxlength="5">
+<label for="horaFin">Hora de finalización</label><input type="text" id="horaFin" placeholder="HH:MM" maxlength="5">
+<div class="checkbox-todo-dia"><input type="checkbox" id="todoElDia"><label for="todoElDia">Todo el día</label></div>
+<label for="colorEvento">Color</label><input type="color" id="colorEvento" value="#6366f1">
+<div class="acciones-modal"><button id="botonEliminar" style="display:none;background:#dc2626;color:white">Eliminar</button><button id="cancelarEvento">Cancelar</button><button id="guardarEvento" class="guardar">Guardar</button></div>
+</div></div>
+
+<div id="modalArrastre" class="modal-arrastre oculto"><div class="caja-arrastre">
+<h3>¿Qué quieres hacer?</h3><p>Has arrastrado este evento a otro día.</p>
+<div class="botones-arrastre"><button id="botonMover" class="boton-mover">Mover</button><button id="botonCopiar" class="boton-copiar">Copiar</button><button id="botonCancelarArrastre" class="boton-cancelar-arrastre">Cancelar</button></div>
+</div></div>
+
+<div id="modalAsignatura" class="modal oculto"><div class="modal-contenido">
+<h2 id="tituloModalAsignatura">Añadir asignatura</h2>
+<label for="nombreAsignatura">Nombre</label><input type="text" id="nombreAsignatura" placeholder="Ej. Historia">
+<label for="descripcionAsignatura">Descripción</label><textarea id="descripcionAsignatura" rows="3" placeholder="Temario, notas, lo que quieras..."></textarea>
+<label for="progresoAsignatura">Progreso</label><input type="range" id="progresoAsignatura" min="0" max="100" value="0">
+<div id="valorProgresoAsignatura" class="valor-rango">0%</div>
+<div class="acciones-modal"><button id="botonEliminarAsignatura" style="display:none;background:#dc2626;color:white">Eliminar</button><button id="cancelarAsignatura">Cancelar</button><button id="guardarAsignatura" class="guardar">Guardar</button></div>
+</div></div>
+
+<div id="modalTemario" class="modal oculto"><div class="modal-contenido">
+<h2 id="tituloModalTemario">Añadir asignatura</h2>
+<label for="nombreAsignaturaTemario">Nombre</label><input type="text" id="nombreAsignaturaTemario" placeholder="Nombre de la asignatura" maxlength="80">
+<div class="acciones-modal"><button id="botonEliminarTemario" style="display:none">Eliminar</button><button id="cancelarModalTemario">Cancelar</button><button id="guardarModalTemario" class="guardar">Guardar</button></div>
+</div></div>
+<script type="module" src="script.js?v=85"></script>
+</body>
+</html>
