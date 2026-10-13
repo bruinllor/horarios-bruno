@@ -1,4 +1,4 @@
-{
+* {
     box-sizing: border-box;
 }
 
@@ -582,6 +582,34 @@ body.dividida #notas {
 
 .lista-cabecera:hover {
     background: var(--bg-panel-alt);
+}
+
+.lista-asa {
+    flex-shrink: 0;
+    padding: 4px 6px;
+    margin-left: -6px;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--texto-suave);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.lista-asa:hover {
+    color: var(--acento);
+}
+
+.lista-asa:active {
+    cursor: grabbing;
+}
+
+.lista-asignatura.arrastrando-lista {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    opacity: 0.92;
 }
 
 .lista-flecha {
