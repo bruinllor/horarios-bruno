@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis horarios</title>
+<link rel="icon" type="image/png" href="icono.png?v=1">
+<style>html { background: #0f1115; }</style>
+<link rel="stylesheet" href="style.css?v=85">
+</head>
+<body>
+<header>
+    <h1>Mis horarios</h1>
+</header>
+
+<nav class="tabs">
+    <button class="tab-btn active" data-tab="horario">Horario</button>
+    <button class="tab-btn" data-tab="lista">Lista</button>
+</nav>
+
+<main>
+    <section id="horario" class="tab-content active">
+        <div id="contenedorHorario"></div>
+    </section>
+
+    <section id="lista" class="tab-content">
+        <div class="lista-header">
+            <h2>Lista de temas</h2>
+            <button id="agregarAsignatura">Añadir asignatura</button>
+        </div>
+        <div id="listaAsignaturas"></div>
+    </section>
+</main>
+
+<script type="module" src="script.js?v=85"></script>
+</body>
+</html>
