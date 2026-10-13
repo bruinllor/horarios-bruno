@@ -1808,7 +1808,7 @@ function mostrarTemario() {
     if (temario.length === 0) {
         const vacio = document.createElement("p");
         vacio.className = "lista-vacia";
-        vacio.textContent = "Todavía no hay asignaturas. Pulsa «+ Añadir asignatura» para empezar.";
+        vacio.textContent = "Todavía no hay asignaturas. Escribe una arriba para empezar.";
         contenedorTemario.appendChild(vacio);
         return;
     }
@@ -1817,6 +1817,50 @@ function mostrarTemario() {
         contenedorTemario.appendChild(crearTarjetaTemario(asignatura));
     });
 }
+
+/* =========================
+   BARRA SUPERIOR: AÑADIR ASIGNATURA RÁPIDO
+   ========================= */
+
+const barraLista = document.createElement("div");
+barraLista.className = "lista-barra-superior";
+
+const campoNuevaAsignatura = document.createElement("input");
+campoNuevaAsignatura.type = "text";
+campoNuevaAsignatura.placeholder = "Nueva asignatura (Enter para añadir)";
+campoNuevaAsignatura.maxLength = 80;
+
+const botonNuevaAsignatura = document.createElement("button");
+botonNuevaAsignatura.className = "lista-btn-add";
+botonNuevaAsignatura.textContent = "+";
+botonNuevaAsignatura.title = "Añadir asignatura";
+
+function anadirAsignaturaRapida() {
+    const nombre = campoNuevaAsignatura.value.trim();
+    if (!nombre || !temarioCargado) return;
+
+    temario.push({
+        id: nuevoIdTemario(),
+        nombre: nombre,
+        temas: []
+    });
+
+    campoNuevaAsignatura.value = "";
+    guardarYMostrarTemario();
+    campoNuevaAsignatura.focus();
+}
+
+campoNuevaAsignatura.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        anadirAsignaturaRapida();
+    }
+});
+botonNuevaAsignatura.addEventListener("click", anadirAsignaturaRapida);
+
+barraLista.appendChild(campoNuevaAsignatura);
+barraLista.appendChild(botonNuevaAsignatura);
+contenedorTemario.parentNode.insertBefore(barraLista, contenedorTemario);
 
 /* =========================
    EVENTOS Y ARRANQUE DE LA LISTA
