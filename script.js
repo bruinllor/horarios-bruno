@@ -1553,6 +1553,7 @@ function crearLista(config) {
     let cargado = false;
     let renderPendiente = false;
     let editandoId = null;
+    let arrastrando = false;
 
     let cerradas = leerLocal(config.claveCerradas, []);
     if (!Array.isArray(cerradas)) cerradas = [];
@@ -1586,8 +1587,8 @@ function crearLista(config) {
             datos = normalizarLista(snapshot.val());
             cargado = true;
 
-            // Si estás escribiendo, no se redibuja hasta que sueltes el campo
-            if (hayEdicionEnCurso()) {
+            // Si estás escribiendo o arrastrando, no se redibuja hasta que termines
+            if (arrastrando || hayEdicionEnCurso()) {
                 renderPendiente = true;
                 return;
             }
@@ -1754,6 +1755,122 @@ function crearLista(config) {
         guardarYMostrar();
     }
 
+    /* ---------- Ordenar asignaturas arrastrando el asa ---------- */
+
+    function conectarAsa(asa, tarjeta) {
+        let ultimaY = 0;
+        let temporizadorScroll = null;
+
+        function tarjetasActuales() {
+            return Array.from(contenedor.children).filter(el => el.classList.contains("lista-asignatura"));
+        }
+
+        function colocarTarjeta(y) {
+            const otras = tarjetasActuales().filter(t => t !== tarjeta);
+
+            for (const t of otras) {
+                const caja = t.getBoundingClientRect();
+                if (y < caja.top + caja.height / 2) {
+                    if (tarjeta.nextElementSibling !== t) contenedor.insertBefore(tarjeta, t);
+                    return;
+                }
+            }
+
+            if (otras.length > 0 && tarjeta !== contenedor.lastElementChild) {
+                contenedor.appendChild(tarjeta);
+            }
+        }
+
+        function terminar(cancelado) {
+            clearInterval(temporizadorScroll);
+            temporizadorScroll = null;
+            document.body.style.userSelect = "";
+            tarjeta.classList.remove("arrastrando-lista");
+
+            if (!cancelado) {
+                const orden = tarjetasActuales().map(t => t.dataset.id);
+                const actual = datos.map(a => String(a.id));
+
+                if (orden.join("|") !== actual.join("|")) {
+                    const porId = new Map(datos.map(a => [String(a.id), a]));
+                    const nuevos = orden.map(id => porId.get(id)).filter(Boolean);
+
+                    // Por si llegó alguna asignatura nueva mientras se arrastraba
+                    datos.forEach(function (a) {
+                        if (!nuevos.includes(a)) nuevos.push(a);
+                    });
+
+                    datos = nuevos;
+                    guardar();
+                }
+            }
+
+            arrastrando = false;
+            mostrar();
+        }
+
+        asa.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+
+        asa.addEventListener("pointerdown", function (e) {
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            if (arrastrando) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const idPuntero = e.pointerId;
+
+            arrastrando = true;
+            ultimaY = e.clientY;
+            tarjeta.classList.add("arrastrando-lista");
+            document.body.style.userSelect = "none";
+
+            // Se escucha en todo el documento: al reordenar, la tarjeta se mueve en el DOM
+            // y el navegador deja de enviar los eventos al asa.
+            function alMover(ev) {
+                if (ev.pointerId !== idPuntero) return;
+                ultimaY = ev.clientY;
+                colocarTarjeta(ev.clientY);
+            }
+
+            function quitarEscuchas() {
+                document.removeEventListener("pointermove", alMover);
+                document.removeEventListener("pointerup", alSoltar);
+                document.removeEventListener("pointercancel", alCancelar);
+            }
+
+            function alSoltar(ev) {
+                if (ev.pointerId !== idPuntero) return;
+                quitarEscuchas();
+                terminar(false);
+            }
+
+            function alCancelar(ev) {
+                if (ev.pointerId !== idPuntero) return;
+                quitarEscuchas();
+                terminar(true);
+            }
+
+            document.addEventListener("pointermove", alMover);
+            document.addEventListener("pointerup", alSoltar);
+            document.addEventListener("pointercancel", alCancelar);
+
+            // Desplazamiento automático al acercarse al borde de la pantalla
+            temporizadorScroll = setInterval(function () {
+                const margen = 70;
+                if (ultimaY < margen) {
+                    window.scrollBy(0, -14);
+                    colocarTarjeta(ultimaY);
+                } else if (ultimaY > window.innerHeight - margen) {
+                    window.scrollBy(0, 14);
+                    colocarTarjeta(ultimaY);
+                }
+            }, 16);
+        });
+    }
+
     /* ---------- Dibujar ---------- */
 
     function crearFilaTema(idAsignatura, tema) {
@@ -1811,11 +1928,18 @@ function crearLista(config) {
 
         const tarjeta = document.createElement("div");
         tarjeta.className = "columna-tablero lista-asignatura";
+        tarjeta.dataset.id = asignatura.id;
 
         /* --- Cabecera (clic = plegar/desplegar) --- */
         const cabecera = document.createElement("div");
         cabecera.className = "cabecera-columna lista-cabecera";
         cabecera.title = cerrada ? "Desplegar" : "Plegar";
+
+        const asa = document.createElement("span");
+        asa.className = "lista-asa";
+        asa.textContent = "⋮⋮";
+        asa.title = "Arrastra para ordenar";
+        conectarAsa(asa, tarjeta);
 
         const flecha = document.createElement("span");
         flecha.className = "lista-flecha";
@@ -1843,6 +1967,7 @@ function crearLista(config) {
             alternarAsignatura(asignatura.id);
         });
 
+        cabecera.appendChild(asa);
         cabecera.appendChild(flecha);
         cabecera.appendChild(titulo);
         cabecera.appendChild(resumen);
