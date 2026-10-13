@@ -1351,7 +1351,7 @@ document.getElementById("guardarAsignatura").onclick = guardarAsignatura;
 document.getElementById("botonEliminarAsignatura").onclick = eliminarAsignatura;
 
 /* =========================================================
-   TEMARIO: ASIGNATURAS CON LISTA DE TEMAS Y ESTADO
+   LISTA: ASIGNATURAS CON LISTA DE TEMAS Y ESTADO
    ========================================================= */
 
 const temarioRef = ref(db, "temario");
@@ -1367,13 +1367,15 @@ let temario = [];
 let temarioCargado = false;
 let renderTemarioPendiente = false;
 let contadorIdTemario = 0;
+let asignaturaTemarioEditandoId = null;
 
 let temasCerrados = leerLocal("temarioCerradas", []);
 if (!Array.isArray(temasCerrados)) temasCerrados = [];
 
 const seccionTemario = document.getElementById("seccionTemario");
 const contenedorTemario = document.getElementById("temario");
-const inputNuevaAsignaturaTemario = document.getElementById("nuevaAsignaturaTemario");
+const modalTemario = document.getElementById("modalTemario");
+const nombreTemarioInput = document.getElementById("nombreAsignaturaTemario");
 
 function nuevoIdTemario() {
     contadorIdTemario++;
@@ -1402,7 +1404,7 @@ function normalizarTemario(datos) {
 
 function guardarTemario() {
     set(temarioRef, temario).catch(function (error) {
-        console.error("Error al guardar el temario en Firebase:", error);
+        console.error("Error al guardar la lista en Firebase:", error);
     });
 }
 
@@ -1429,7 +1431,7 @@ function escucharTemario() {
 
         mostrarTemario();
     }, function (error) {
-        console.error("Error al leer el temario de Firebase:", error);
+        console.error("Error al leer la lista de Firebase:", error);
     });
 }
 
@@ -1444,46 +1446,77 @@ seccionTemario.addEventListener("focusout", function () {
 });
 
 /* =========================
-   BÚSQUEDAS Y ACCIONES
+   MODAL AÑADIR / EDITAR ASIGNATURA (LISTA)
    ========================= */
 
 function buscarAsignaturaTemario(id) {
     return temario.find(a => String(a.id) === String(id));
 }
 
-function anadirAsignaturaTemario() {
-    const nombre = inputNuevaAsignaturaTemario.value.trim();
-    if (!nombre) return;
-
-    temario.push({
-        id: nuevoIdTemario(),
-        nombre: nombre,
-        temas: []
-    });
-
-    inputNuevaAsignaturaTemario.value = "";
-    guardarYMostrarTemario();
-    inputNuevaAsignaturaTemario.focus();
+function abrirModalTemario() {
+    asignaturaTemarioEditandoId = null;
+    document.getElementById("tituloModalTemario").textContent = "Añadir asignatura";
+    nombreTemarioInput.value = "";
+    document.getElementById("botonEliminarTemario").style.display = "none";
+    modalTemario.classList.remove("oculto");
+    setTimeout(() => nombreTemarioInput.focus(), 0);
 }
 
-function renombrarAsignaturaTemario(idAsignatura, nombre) {
+function editarAsignaturaTemario(idAsignatura) {
     const asignatura = buscarAsignaturaTemario(idAsignatura);
     if (!asignatura) return;
 
-    asignatura.nombre = nombre;
-    guardarTemario();
+    asignaturaTemarioEditandoId = asignatura.id;
+    document.getElementById("tituloModalTemario").textContent = "Editar asignatura";
+    nombreTemarioInput.value = asignatura.nombre;
+    document.getElementById("botonEliminarTemario").style.display = "block";
+    modalTemario.classList.remove("oculto");
+    setTimeout(() => nombreTemarioInput.focus(), 0);
+}
+
+function cerrarModalTemario() {
+    modalTemario.classList.add("oculto");
+    asignaturaTemarioEditandoId = null;
+}
+
+function confirmarModalTemario() {
+    const nombre = nombreTemarioInput.value.trim();
+
+    if (!nombre) {
+        alert("Ponle un nombre a la asignatura.");
+        return;
+    }
+
+    if (asignaturaTemarioEditandoId !== null) {
+        const asignatura = buscarAsignaturaTemario(asignaturaTemarioEditandoId);
+        if (asignatura) asignatura.nombre = nombre;
+    } else {
+        temario.push({
+            id: nuevoIdTemario(),
+            nombre: nombre,
+            temas: []
+        });
+    }
+
+    guardarYMostrarTemario();
+    cerrarModalTemario();
 }
 
 function eliminarAsignaturaTemario(idAsignatura) {
     const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura) return;
+    if (!asignatura) return false;
 
     const confirmar = confirm(`¿Quieres eliminar "${asignatura.nombre}" y todos sus temas?`);
-    if (!confirmar) return;
+    if (!confirmar) return false;
 
     temario = temario.filter(a => String(a.id) !== String(idAsignatura));
     guardarYMostrarTemario();
+    return true;
 }
+
+/* =========================
+   ACCIONES SOBRE TEMAS
+   ========================= */
 
 function alternarAsignaturaTemario(idAsignatura) {
     const id = String(idAsignatura);
@@ -1563,7 +1596,7 @@ function eliminarTema(idAsignatura, idTema) {
 }
 
 /* =========================
-   MOSTRAR TEMARIO
+   MOSTRAR LISTA
    ========================= */
 
 function conectarEdicionTexto(input, alGuardar) {
@@ -1644,78 +1677,75 @@ function crearTarjetaTemario(asignatura) {
     const cerrada = temasCerrados.includes(String(asignatura.id));
 
     const tarjeta = document.createElement("div");
-    tarjeta.className = "temario-tarjeta";
+    tarjeta.className = "columna-tablero lista-asignatura";
 
-    /* --- Cabecera --- */
+    /* --- Cabecera (clic = plegar/desplegar) --- */
     const cabecera = document.createElement("div");
-    cabecera.className = "temario-cabecera";
+    cabecera.className = "cabecera-columna lista-cabecera";
+    cabecera.title = cerrada ? "Desplegar" : "Plegar";
 
-    const botonToggle = document.createElement("button");
-    botonToggle.className = "temario-toggle";
-    botonToggle.textContent = cerrada ? "▸" : "▾";
-    botonToggle.title = cerrada ? "Desplegar" : "Plegar";
-    botonToggle.addEventListener("click", function () {
-        alternarAsignaturaTemario(asignatura.id);
-    });
+    const flecha = document.createElement("span");
+    flecha.className = "lista-flecha";
+    flecha.textContent = cerrada ? "▸" : "▾";
 
-    const nombre = document.createElement("input");
-    nombre.type = "text";
-    nombre.className = "temario-nombre";
-    nombre.value = asignatura.nombre;
-    nombre.maxLength = 80;
-    conectarEdicionTexto(nombre, function (nuevo) {
-        renombrarAsignaturaTemario(asignatura.id, nuevo);
-    });
+    const titulo = document.createElement("span");
+    titulo.className = "lista-titulo";
+    titulo.textContent = asignatura.nombre;
 
     const resumen = document.createElement("span");
-    resumen.className = "temario-resumen";
+    resumen.className = "lista-resumen";
     resumen.textContent = total ? `${terminados}/${total}` : "Sin temas";
     resumen.title = "Temas terminados";
 
-    const borrar = document.createElement("button");
-    borrar.className = "temario-borrar";
-    borrar.textContent = "✕";
-    borrar.title = "Eliminar asignatura";
-    borrar.addEventListener("click", function () {
-        eliminarAsignaturaTemario(asignatura.id);
+    const editar = document.createElement("button");
+    editar.className = "lista-editar";
+    editar.textContent = "✎";
+    editar.title = "Editar asignatura";
+    editar.addEventListener("click", function (e) {
+        e.stopPropagation();
+        editarAsignaturaTemario(asignatura.id);
     });
 
-    cabecera.appendChild(botonToggle);
-    cabecera.appendChild(nombre);
+    cabecera.addEventListener("click", function () {
+        alternarAsignaturaTemario(asignatura.id);
+    });
+
+    cabecera.appendChild(flecha);
+    cabecera.appendChild(titulo);
     cabecera.appendChild(resumen);
-    cabecera.appendChild(borrar);
+    cabecera.appendChild(editar);
     tarjeta.appendChild(cabecera);
 
     /* --- Barra de progreso (temas terminados) --- */
     const barra = document.createElement("div");
-    barra.className = "temario-barra";
+    barra.className = "lista-barra";
 
     const relleno = document.createElement("div");
-    relleno.className = "temario-barra-relleno";
+    relleno.className = "lista-barra-relleno";
     relleno.style.width = porcentaje + "%";
     barra.appendChild(relleno);
     tarjeta.appendChild(barra);
 
     if (cerrada) return tarjeta;
 
-    /* --- Cuerpo: lista de temas + añadir --- */
+    /* --- Cuerpo: temas + añadir --- */
     const cuerpo = document.createElement("div");
-    cuerpo.className = "temario-cuerpo";
+    cuerpo.className = "lista-cuerpo";
 
     if (total === 0) {
         const vacio = document.createElement("p");
-        vacio.className = "temario-sin-temas";
+        vacio.className = "lista-sin-temas";
         vacio.textContent = "Aún no hay temas.";
         cuerpo.appendChild(vacio);
     } else {
         const lista = document.createElement("div");
-        lista.className = "temario-lista";
+        lista.className = "lista-temas";
         temas.forEach(t => lista.appendChild(crearFilaTema(asignatura.id, t)));
         cuerpo.appendChild(lista);
     }
 
     const filaNuevo = document.createElement("div");
-    filaNuevo.className = "temario-nuevo-tema";
+    filaNuevo.className = "lista-nuevo-tema";
 
     const campoNuevo = document.createElement("input");
     campoNuevo.type = "text";
@@ -1724,7 +1754,7 @@ function crearTarjetaTemario(asignatura) {
     campoNuevo.dataset.addTema = asignatura.id;
 
     const botonNuevo = document.createElement("button");
-    botonNuevo.className = "temario-btn-add";
+    botonNuevo.className = "lista-btn-add";
     botonNuevo.textContent = "+";
     botonNuevo.title = "Añadir tema";
 
@@ -1769,7 +1799,7 @@ function mostrarTemario() {
 
     if (!temarioCargado) {
         const cargando = document.createElement("p");
-        cargando.className = "temario-vacio";
+        cargando.className = "lista-vacia";
         cargando.textContent = "Cargando...";
         contenedorTemario.appendChild(cargando);
         return;
@@ -1777,8 +1807,8 @@ function mostrarTemario() {
 
     if (temario.length === 0) {
         const vacio = document.createElement("p");
-        vacio.className = "temario-vacio";
-        vacio.textContent = "Todavía no hay asignaturas. Escribe una arriba para empezar.";
+        vacio.className = "lista-vacia";
+        vacio.textContent = "Todavía no hay asignaturas. Pulsa «+ Añadir asignatura» para empezar.";
         contenedorTemario.appendChild(vacio);
         return;
     }
@@ -1789,17 +1819,26 @@ function mostrarTemario() {
 }
 
 /* =========================
-   EVENTOS Y ARRANQUE DEL TEMARIO
+   EVENTOS Y ARRANQUE DE LA LISTA
    ========================= */
 
-inputNuevaAsignaturaTemario.addEventListener("keydown", function (e) {
+document.getElementById("btnAnadirAsignaturaTemario").onclick = abrirModalTemario;
+document.getElementById("cancelarModalTemario").onclick = cerrarModalTemario;
+document.getElementById("guardarModalTemario").onclick = confirmarModalTemario;
+
+document.getElementById("botonEliminarTemario").onclick = function () {
+    if (asignaturaTemarioEditandoId === null) return;
+    if (eliminarAsignaturaTemario(asignaturaTemarioEditandoId)) {
+        cerrarModalTemario();
+    }
+};
+
+nombreTemarioInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
         e.preventDefault();
-        anadirAsignaturaTemario();
+        confirmarModalTemario();
     }
 });
-
-document.getElementById("btnAnadirAsignaturaTemario").onclick = anadirAsignaturaTemario;
 
 escucharTemario();
 aplicarSecciones();
