@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="icono.png?v=1">
 
     <style>html { background: #0f1115; }</style>
-    <link rel="stylesheet" href="style.css?v=82">
+    <link rel="stylesheet" href="style.css?v=83">
 </head>
 <body>
     <header>
@@ -21,7 +21,16 @@
                 <button id="seccionTableroBtn">
                     Tablero
                 </button>
+                <button id="seccionTemarioBtn">
+                    Temario
+                </button>
+                <button id="btnDividir" class="btn-dividir">
+                    ◫ Dividir pantalla
+                </button>
             </div>
+            <p id="avisoDividir" class="aviso-dividir" hidden>
+                Pantalla dividida: pulsa dos pestañas para verlas a la vez.
+            </p>
             <div class="vistas">
                 <button id="vistaSemana" class="active">
                     Semana
@@ -32,6 +41,8 @@
             </div>
         </div>
     </header>
+
+    <div id="contenedorSecciones">
 
     <!-- =========================
          SECCIÓN CALENDARIO
@@ -73,6 +84,32 @@
         </p>
         <div id="tablero"></div>
     </main>
+
+    <!-- =========================
+         SECCIÓN TEMARIO
+         ========================= -->
+
+    <main id="seccionTemario" class="seccion-oculta">
+        <div class="temario-nueva-asignatura">
+            <input
+                type="text"
+                id="nuevaAsignaturaTemario"
+                placeholder="Nueva asignatura (Enter para añadir)"
+                maxlength="80"
+            >
+            <button
+                id="btnAnadirAsignaturaTemario"
+                class="temario-btn-add">
+                + Añadir
+            </button>
+        </div>
+        <p class="instruccion-arrastre">
+            Dentro de cada asignatura añade sus temas y cambia el estado de cada uno.
+        </p>
+        <div id="temario"></div>
+    </main>
+
+    </div>
 
     <!-- MODAL AÑADIR / EDITAR EVENTO -->
     <div id="modal" class="modal oculto">
@@ -232,6 +269,6 @@
         </div>
     </div>
 
-    <script type="module" src="script.js?v=82"></script>
+    <script type="module" src="script.js?v=83"></script>
 </body>
 </html>
