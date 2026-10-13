@@ -736,4 +736,285 @@ main {
 
 @media (max-width: 500px) {
     .botones-arrastre { flex-direction: column; }
+    /* =========================================================
+   INSTRUCCIONES: pega todo esto AL FINAL de style.css
+   ========================================================= */
+
+/* =========================
+   PANTALLA DIVIDIDA
+   ========================= */
+
+.secciones {
+    flex-wrap: wrap !important;
+}
+
+.btn-dividir {
+    border: 1px dashed var(--borde);
+    margin-left: 8px;
+}
+
+.btn-dividir.active {
+    border-style: solid;
+    border-color: var(--acento);
+}
+
+.aviso-dividir {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--texto-suave);
+    text-align: center;
+}
+
+.aviso-dividir[hidden] {
+    display: none;
+}
+
+#contenedorSecciones {
+    width: 100%;
+}
+
+body.dividida #contenedorSecciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+    padding: 0 12px;
+}
+
+body.dividida main {
+    max-width: none;
+    margin: 20px 0;
+    padding: 0;
+    min-width: 0;
+}
+
+body.dividida .calendario-semana {
+    overflow: auto;
+    grid-template-columns: 50px repeat(7, minmax(105px, 1fr));
+    padding: 0 8px;
+}
+
+body.dividida .calendario-mes {
+    padding: 0 6px;
+    font-size: 11px;
+}
+
+body.dividida .cabecera-mes {
+    padding: 8px 2px;
+    font-size: 11px;
+}
+
+body.dividida .dia-mes {
+    min-height: 90px;
+    padding: 4px;
+}
+
+body.dividida .evento-mes {
+    font-size: 10px;
+    padding: 3px 4px;
+}
+
+body.dividida #tablero {
+    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+}
+
+/* En pantallas estrechas las dos pestañas se apilan una encima de otra */
+@media (max-width: 900px) {
+    body.dividida #contenedorSecciones {
+        grid-template-columns: 1fr;
+        padding: 0 8px;
+    }
+}
+
+/* =========================
+   TEMARIO
+   ========================= */
+
+.temario-nueva-asignatura {
+    display: flex;
+    gap: 8px;
+    max-width: 520px;
+    margin: 20px auto 10px;
+}
+
+.temario-nueva-asignatura input,
+.temario-nuevo-tema input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    color: var(--texto);
+    font-size: 15px;
+    font-family: inherit;
+}
+
+.temario-nueva-asignatura input:focus,
+.temario-nuevo-tema input:focus {
+    outline: none;
+    border-color: var(--acento);
+}
+
+.temario-btn-add {
+    background: var(--acento);
+    color: white;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+#temario {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.temario-vacio {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--texto-suave);
+    padding: 30px 0;
+}
+
+.temario-tarjeta {
+    background: var(--bg-panel);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.temario-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bg-panel-alt);
+}
+
+.temario-toggle,
+.temario-borrar,
+.tema-borrar {
+    padding: 4px 8px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--texto-suave);
+}
+
+.temario-borrar:hover,
+.tema-borrar:hover {
+    color: #f87171;
+}
+
+.temario-nombre {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--texto);
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.temario-nombre:focus,
+.tema-nombre-input:focus {
+    outline: none;
+    border-color: var(--acento);
+    background: var(--bg-panel);
+}
+
+.temario-resumen {
+    font-size: 12px;
+    color: var(--texto-suave);
+    white-space: nowrap;
+}
+
+.temario-barra {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.temario-barra-relleno {
+    height: 100%;
+    background: #4ade80;
+    transition: width 0.2s ease;
+}
+
+.temario-cuerpo {
+    padding: 10px;
+}
+
+.temario-sin-temas {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--texto-suave);
+    text-align: center;
+}
+
+.temario-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tema-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--bg-panel-alt);
+    border-radius: 8px;
+    border-left: 4px solid var(--color-estado, #9ca3af);
+}
+
+.tema-fila[data-estado="porver"]    { --color-estado: #9ca3af; }
+.tema-fila[data-estado="leido"]     { --color-estado: #60a5fa; }
+.tema-fila[data-estado="repasar"]   { --color-estado: #fbbf24; }
+.tema-fila[data-estado="terminado"] { --color-estado: #4ade80; }
+
+.tema-nombre-input {
+    flex: 1 1 140px;
+    min-width: 0;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--texto);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.tema-fila[data-estado="terminado"] .tema-nombre-input {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.tema-estado {
+    flex: 0 0 auto;
+    padding: 6px 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--color-estado);
+    border-radius: 6px;
+    color: var(--color-estado);
+    font-size: 13px;
+    font-family: inherit;
+    color-scheme: dark;
+    cursor: pointer;
+}
+
+.temario-nuevo-tema {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.temario-nuevo-tema input {
+    font-size: 14px;
+}
 }
