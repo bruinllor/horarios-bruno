@@ -911,22 +911,111 @@ document.getElementById("mesSiguiente").onclick = function () {
 };
 
 /* =========================================================
-   CAMBIAR SECCIÓN (CALENDARIO / TABLERO)
+   CAMBIAR SECCIÓN + PANTALLA DIVIDIDA
    ========================================================= */
 
-document.getElementById("seccionCalendarioBtn").onclick = function () {
-    document.getElementById("seccionCalendario").classList.remove("seccion-oculta");
-    document.getElementById("seccionTablero").classList.add("seccion-oculta");
-    document.getElementById("seccionCalendarioBtn").classList.add("active");
-    document.getElementById("seccionTableroBtn").classList.remove("active");
+const SECCIONES = {
+    calendario: { boton: "seccionCalendarioBtn", panel: "seccionCalendario", mostrar: mostrarCalendario },
+    tablero:    { boton: "seccionTableroBtn",    panel: "seccionTablero",    mostrar: mostrarTablero },
+    temario:    { boton: "seccionTemarioBtn",    panel: "seccionTemario",    mostrar: mostrarTemario }
 };
 
-document.getElementById("seccionTableroBtn").onclick = function () {
-    document.getElementById("seccionTablero").classList.remove("seccion-oculta");
-    document.getElementById("seccionCalendario").classList.add("seccion-oculta");
-    document.getElementById("seccionTableroBtn").classList.add("active");
-    document.getElementById("seccionCalendarioBtn").classList.remove("active");
-    mostrarTablero();
+const ORDEN_SECCIONES = Object.keys(SECCIONES);
+const MAX_SECCIONES_DIVIDIDAS = 2;
+
+let pantallaDividida = false;
+let seccionesVisibles = ["calendario"];
+
+function leerLocal(clave, porDefecto) {
+    try {
+        const valor = localStorage.getItem(clave);
+        return valor ? JSON.parse(valor) : porDefecto;
+    } catch (error) {
+        return porDefecto;
+    }
+}
+
+function escribirLocal(clave, valor) {
+    try {
+        localStorage.setItem(clave, JSON.stringify(valor));
+    } catch (error) {
+        /* sin almacenamiento local: no pasa nada */
+    }
+}
+
+function cargarVistaGuardada() {
+    const guardada = leerLocal("vistaSecciones", null);
+    if (!guardada || !guardada.dividida || !Array.isArray(guardada.visibles)) return;
+
+    const validas = guardada.visibles
+        .filter(id => SECCIONES[id])
+        .slice(0, MAX_SECCIONES_DIVIDIDAS);
+
+    if (validas.length < 2) return;
+
+    pantallaDividida = true;
+    seccionesVisibles = validas;
+}
+
+cargarVistaGuardada();
+
+function aplicarSecciones() {
+    ORDEN_SECCIONES.forEach(function (id) {
+        const visible = seccionesVisibles.includes(id);
+        document.getElementById(SECCIONES[id].panel).classList.toggle("seccion-oculta", !visible);
+        document.getElementById(SECCIONES[id].boton).classList.toggle("active", visible);
+    });
+
+    document.body.classList.toggle("dividida", pantallaDividida && seccionesVisibles.length > 1);
+    document.getElementById("btnDividir").classList.toggle("active", pantallaDividida);
+    document.getElementById("avisoDividir").hidden = !pantallaDividida;
+
+    seccionesVisibles.forEach(id => SECCIONES[id].mostrar());
+
+    escribirLocal("vistaSecciones", {
+        dividida: pantallaDividida,
+        visibles: seccionesVisibles
+    });
+}
+
+function pulsarSeccion(id) {
+    if (!pantallaDividida) {
+        seccionesVisibles = [id];
+    } else if (seccionesVisibles.includes(id)) {
+        // En pantalla dividida, pulsar una pestaña visible la quita (siempre queda al menos una)
+        if (seccionesVisibles.length > 1) {
+            seccionesVisibles = seccionesVisibles.filter(x => x !== id);
+        }
+    } else {
+        seccionesVisibles.push(id);
+        if (seccionesVisibles.length > MAX_SECCIONES_DIVIDIDAS) {
+            seccionesVisibles.shift();
+        }
+    }
+
+    aplicarSecciones();
+}
+
+ORDEN_SECCIONES.forEach(function (id) {
+    document.getElementById(SECCIONES[id].boton).onclick = function () {
+        pulsarSeccion(id);
+    };
+});
+
+document.getElementById("btnDividir").onclick = function () {
+    pantallaDividida = !pantallaDividida;
+
+    if (pantallaDividida) {
+        if (seccionesVisibles.length < 2) {
+            const otra = ORDEN_SECCIONES.find(id => !seccionesVisibles.includes(id));
+            seccionesVisibles.unshift(otra);
+        }
+    } else {
+        // Al salir de la división nos quedamos con la última pestaña pulsada
+        seccionesVisibles = [seccionesVisibles[seccionesVisibles.length - 1]];
+    }
+
+    aplicarSecciones();
 };
 
 /* =========================================================
@@ -1260,6 +1349,460 @@ document.getElementById("btnAnadirAsignatura").onclick = abrirModalAsignatura;
 document.getElementById("cancelarAsignatura").onclick = cerrarModalAsignatura;
 document.getElementById("guardarAsignatura").onclick = guardarAsignatura;
 document.getElementById("botonEliminarAsignatura").onclick = eliminarAsignatura;
+
+/* =========================================================
+   TEMARIO: ASIGNATURAS CON LISTA DE TEMAS Y ESTADO
+   ========================================================= */
+
+const temarioRef = ref(db, "temario");
+
+const ESTADOS_TEMA = [
+    { id: "porver", titulo: "Por ver" },
+    { id: "leido", titulo: "Leído" },
+    { id: "repasar", titulo: "Repasar/practicar solo" },
+    { id: "terminado", titulo: "Terminado" }
+];
+
+let temario = [];
+let temarioCargado = false;
+let renderTemarioPendiente = false;
+let contadorIdTemario = 0;
+
+let temasCerrados = leerLocal("temarioCerradas", []);
+if (!Array.isArray(temasCerrados)) temasCerrados = [];
+
+const seccionTemario = document.getElementById("seccionTemario");
+const contenedorTemario = document.getElementById("temario");
+const inputNuevaAsignaturaTemario = document.getElementById("nuevaAsignaturaTemario");
+
+function nuevoIdTemario() {
+    contadorIdTemario++;
+    return Date.now() * 1000 + (contadorIdTemario % 1000);
+}
+
+/* =========================
+   GUARDAR Y ESCUCHAR (FIREBASE)
+   ========================= */
+
+function normalizarTemario(datos) {
+    const lista = !datos ? [] : (Array.isArray(datos) ? datos : Object.values(datos));
+
+    return lista.filter(Boolean).map(function (asignatura) {
+        // Firebase no guarda arrays vacíos: si no hay temas, "temas" llega sin definir
+        const temasBrutos = asignatura.temas
+            ? (Array.isArray(asignatura.temas) ? asignatura.temas : Object.values(asignatura.temas))
+            : [];
+
+        return {
+            ...asignatura,
+            temas: temasBrutos.filter(Boolean)
+        };
+    });
+}
+
+function guardarTemario() {
+    set(temarioRef, temario).catch(function (error) {
+        console.error("Error al guardar el temario en Firebase:", error);
+    });
+}
+
+function guardarYMostrarTemario() {
+    guardarTemario();
+    mostrarTemario();
+}
+
+function hayEdicionTemarioEnCurso() {
+    const activo = document.activeElement;
+    return !!(activo && activo.tagName === "INPUT" && seccionTemario.contains(activo));
+}
+
+function escucharTemario() {
+    onValue(temarioRef, function (snapshot) {
+        temario = normalizarTemario(snapshot.val());
+        temarioCargado = true;
+
+        // Si estás escribiendo, no se redibuja hasta que sueltes el campo
+        if (hayEdicionTemarioEnCurso()) {
+            renderTemarioPendiente = true;
+            return;
+        }
+
+        mostrarTemario();
+    }, function (error) {
+        console.error("Error al leer el temario de Firebase:", error);
+    });
+}
+
+seccionTemario.addEventListener("focusout", function () {
+    if (!renderTemarioPendiente) return;
+
+    setTimeout(function () {
+        if (renderTemarioPendiente && !hayEdicionTemarioEnCurso()) {
+            mostrarTemario();
+        }
+    }, 0);
+});
+
+/* =========================
+   BÚSQUEDAS Y ACCIONES
+   ========================= */
+
+function buscarAsignaturaTemario(id) {
+    return temario.find(a => String(a.id) === String(id));
+}
+
+function anadirAsignaturaTemario() {
+    const nombre = inputNuevaAsignaturaTemario.value.trim();
+    if (!nombre) return;
+
+    temario.push({
+        id: nuevoIdTemario(),
+        nombre: nombre,
+        temas: []
+    });
+
+    inputNuevaAsignaturaTemario.value = "";
+    guardarYMostrarTemario();
+    inputNuevaAsignaturaTemario.focus();
+}
+
+function renombrarAsignaturaTemario(idAsignatura, nombre) {
+    const asignatura = buscarAsignaturaTemario(idAsignatura);
+    if (!asignatura) return;
+
+    asignatura.nombre = nombre;
+    guardarTemario();
+}
+
+function eliminarAsignaturaTemario(idAsignatura) {
+    const asignatura = buscarAsignaturaTemario(idAsignatura);
+    if (!asignatura) return;
+
+    const confirmar = confirm(`¿Quieres eliminar "${asignatura.nombre}" y todos sus temas?`);
+    if (!confirmar) return;
+
+    temario = temario.filter(a => String(a.id) !== String(idAsignatura));
+    guardarYMostrarTemario();
+}
+
+function alternarAsignaturaTemario(idAsignatura) {
+    const id = String(idAsignatura);
+
+    if (temasCerrados.includes(id)) {
+        temasCerrados = temasCerrados.filter(x => x !== id);
+    } else {
+        temasCerrados.push(id);
+    }
+
+    escribirLocal("temarioCerradas", temasCerrados);
+    mostrarTemario();
+}
+
+function limpiarLineaTema(texto) {
+    // Quita viñetas o numeración al pegar listas ("- tema", "1. tema", "2) tema")
+    return texto.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, "").trim();
+}
+
+function anadirTemas(idAsignatura, textos) {
+    const asignatura = buscarAsignaturaTemario(idAsignatura);
+    if (!asignatura) return;
+
+    const nombres = textos.map(limpiarLineaTema).filter(Boolean);
+    if (nombres.length === 0) return;
+
+    if (!asignatura.temas) asignatura.temas = [];
+
+    nombres.forEach(function (nombre) {
+        asignatura.temas.push({
+            id: nuevoIdTemario(),
+            nombre: nombre,
+            estado: "porver"
+        });
+    });
+
+    // Si estaba plegada, la desplegamos para ver lo añadido
+    temasCerrados = temasCerrados.filter(x => x !== String(idAsignatura));
+    escribirLocal("temarioCerradas", temasCerrados);
+
+    guardarYMostrarTemario();
+
+    const campo = contenedorTemario.querySelector(`[data-add-tema="${idAsignatura}"]`);
+    if (campo) campo.focus();
+}
+
+function buscarTema(idAsignatura, idTema) {
+    const asignatura = buscarAsignaturaTemario(idAsignatura);
+    if (!asignatura || !asignatura.temas) return null;
+    return asignatura.temas.find(t => String(t.id) === String(idTema)) || null;
+}
+
+function renombrarTema(idAsignatura, idTema, nombre) {
+    const tema = buscarTema(idAsignatura, idTema);
+    if (!tema) return;
+
+    tema.nombre = nombre;
+    guardarTemario();
+}
+
+function cambiarEstadoTema(idAsignatura, idTema, estado) {
+    if (!ESTADOS_TEMA.some(e => e.id === estado)) return;
+
+    const tema = buscarTema(idAsignatura, idTema);
+    if (!tema) return;
+
+    tema.estado = estado;
+    guardarYMostrarTemario();
+}
+
+function eliminarTema(idAsignatura, idTema) {
+    const asignatura = buscarAsignaturaTemario(idAsignatura);
+    if (!asignatura || !asignatura.temas) return;
+
+    asignatura.temas = asignatura.temas.filter(t => String(t.id) !== String(idTema));
+    guardarYMostrarTemario();
+}
+
+/* =========================
+   MOSTRAR TEMARIO
+   ========================= */
+
+function conectarEdicionTexto(input, alGuardar) {
+    const original = input.value;
+
+    input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            input.blur();
+        } else if (e.key === "Escape") {
+            input.value = original;
+            input.blur();
+        }
+    });
+
+    input.addEventListener("change", function () {
+        const nuevo = input.value.trim();
+
+        if (!nuevo || nuevo === original) {
+            input.value = original;
+            return;
+        }
+
+        alGuardar(nuevo);
+    });
+}
+
+function crearFilaTema(idAsignatura, tema) {
+    const estado = ESTADOS_TEMA.some(e => e.id === tema.estado) ? tema.estado : "porver";
+
+    const fila = document.createElement("div");
+    fila.className = "tema-fila";
+    fila.dataset.estado = estado;
+
+    const nombre = document.createElement("input");
+    nombre.type = "text";
+    nombre.className = "tema-nombre-input";
+    nombre.value = tema.nombre;
+    nombre.maxLength = 120;
+    conectarEdicionTexto(nombre, function (nuevo) {
+        renombrarTema(idAsignatura, tema.id, nuevo);
+    });
+
+    const selector = document.createElement("select");
+    selector.className = "tema-estado";
+
+    ESTADOS_TEMA.forEach(function (e) {
+        const opcion = document.createElement("option");
+        opcion.value = e.id;
+        opcion.textContent = e.titulo;
+        opcion.selected = e.id === estado;
+        selector.appendChild(opcion);
+    });
+
+    selector.addEventListener("change", function () {
+        cambiarEstadoTema(idAsignatura, tema.id, selector.value);
+    });
+
+    const borrar = document.createElement("button");
+    borrar.className = "tema-borrar";
+    borrar.textContent = "✕";
+    borrar.title = "Eliminar tema";
+    borrar.addEventListener("click", function () {
+        eliminarTema(idAsignatura, tema.id);
+    });
+
+    fila.appendChild(nombre);
+    fila.appendChild(selector);
+    fila.appendChild(borrar);
+
+    return fila;
+}
+
+function crearTarjetaTemario(asignatura) {
+    const temas = asignatura.temas || [];
+    const total = temas.length;
+    const terminados = temas.filter(t => t.estado === "terminado").length;
+    const porcentaje = total ? Math.round((terminados / total) * 100) : 0;
+    const cerrada = temasCerrados.includes(String(asignatura.id));
+
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "temario-tarjeta";
+
+    /* --- Cabecera --- */
+    const cabecera = document.createElement("div");
+    cabecera.className = "temario-cabecera";
+
+    const botonToggle = document.createElement("button");
+    botonToggle.className = "temario-toggle";
+    botonToggle.textContent = cerrada ? "▸" : "▾";
+    botonToggle.title = cerrada ? "Desplegar" : "Plegar";
+    botonToggle.addEventListener("click", function () {
+        alternarAsignaturaTemario(asignatura.id);
+    });
+
+    const nombre = document.createElement("input");
+    nombre.type = "text";
+    nombre.className = "temario-nombre";
+    nombre.value = asignatura.nombre;
+    nombre.maxLength = 80;
+    conectarEdicionTexto(nombre, function (nuevo) {
+        renombrarAsignaturaTemario(asignatura.id, nuevo);
+    });
+
+    const resumen = document.createElement("span");
+    resumen.className = "temario-resumen";
+    resumen.textContent = total ? `${terminados}/${total}` : "Sin temas";
+    resumen.title = "Temas terminados";
+
+    const borrar = document.createElement("button");
+    borrar.className = "temario-borrar";
+    borrar.textContent = "✕";
+    borrar.title = "Eliminar asignatura";
+    borrar.addEventListener("click", function () {
+        eliminarAsignaturaTemario(asignatura.id);
+    });
+
+    cabecera.appendChild(botonToggle);
+    cabecera.appendChild(nombre);
+    cabecera.appendChild(resumen);
+    cabecera.appendChild(borrar);
+    tarjeta.appendChild(cabecera);
+
+    /* --- Barra de progreso (temas terminados) --- */
+    const barra = document.createElement("div");
+    barra.className = "temario-barra";
+
+    const relleno = document.createElement("div");
+    relleno.className = "temario-barra-relleno";
+    relleno.style.width = porcentaje + "%";
+    barra.appendChild(relleno);
+    tarjeta.appendChild(barra);
+
+    if (cerrada) return tarjeta;
+
+    /* --- Cuerpo: lista de temas + añadir --- */
+    const cuerpo = document.createElement("div");
+    cuerpo.className = "temario-cuerpo";
+
+    if (total === 0) {
+        const vacio = document.createElement("p");
+        vacio.className = "temario-sin-temas";
+        vacio.textContent = "Aún no hay temas.";
+        cuerpo.appendChild(vacio);
+    } else {
+        const lista = document.createElement("div");
+        lista.className = "temario-lista";
+        temas.forEach(t => lista.appendChild(crearFilaTema(asignatura.id, t)));
+        cuerpo.appendChild(lista);
+    }
+
+    const filaNuevo = document.createElement("div");
+    filaNuevo.className = "temario-nuevo-tema";
+
+    const campoNuevo = document.createElement("input");
+    campoNuevo.type = "text";
+    campoNuevo.placeholder = "Añadir tema (Enter). Puedes pegar una lista";
+    campoNuevo.maxLength = 120;
+    campoNuevo.dataset.addTema = asignatura.id;
+
+    const botonNuevo = document.createElement("button");
+    botonNuevo.className = "temario-btn-add";
+    botonNuevo.textContent = "+";
+    botonNuevo.title = "Añadir tema";
+
+    function confirmarNuevoTema() {
+        const texto = campoNuevo.value;
+        campoNuevo.value = "";
+        anadirTemas(asignatura.id, [texto]);
+    }
+
+    campoNuevo.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            confirmarNuevoTema();
+        }
+    });
+
+    // Pegar varias líneas = añadir varios temas de golpe
+    campoNuevo.addEventListener("paste", function (e) {
+        const portapapeles = e.clipboardData || window.clipboardData;
+        const texto = portapapeles ? portapapeles.getData("text") : "";
+
+        if (texto && /[\r\n]/.test(texto.trim())) {
+            e.preventDefault();
+            anadirTemas(asignatura.id, texto.split(/\r?\n/));
+        }
+    });
+
+    botonNuevo.addEventListener("click", confirmarNuevoTema);
+
+    filaNuevo.appendChild(campoNuevo);
+    filaNuevo.appendChild(botonNuevo);
+    cuerpo.appendChild(filaNuevo);
+
+    tarjeta.appendChild(cuerpo);
+
+    return tarjeta;
+}
+
+function mostrarTemario() {
+    renderTemarioPendiente = false;
+    contenedorTemario.innerHTML = "";
+
+    if (!temarioCargado) {
+        const cargando = document.createElement("p");
+        cargando.className = "temario-vacio";
+        cargando.textContent = "Cargando...";
+        contenedorTemario.appendChild(cargando);
+        return;
+    }
+
+    if (temario.length === 0) {
+        const vacio = document.createElement("p");
+        vacio.className = "temario-vacio";
+        vacio.textContent = "Todavía no hay asignaturas. Escribe una arriba para empezar.";
+        contenedorTemario.appendChild(vacio);
+        return;
+    }
+
+    temario.forEach(function (asignatura) {
+        contenedorTemario.appendChild(crearTarjetaTemario(asignatura));
+    });
+}
+
+/* =========================
+   EVENTOS Y ARRANQUE DEL TEMARIO
+   ========================= */
+
+inputNuevaAsignaturaTemario.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        anadirAsignaturaTemario();
+    }
+});
+
+document.getElementById("btnAnadirAsignaturaTemario").onclick = anadirAsignaturaTemario;
+
+escucharTemario();
+aplicarSecciones();
 
 /* =========================
    INICIO
