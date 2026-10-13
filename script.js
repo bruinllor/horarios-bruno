@@ -1374,6 +1374,38 @@ if (!Array.isArray(temasCerrados)) temasCerrados = [];
 
 const seccionTemario = document.getElementById("seccionTemario");
 const contenedorTemario = document.getElementById("temario");
+/* Si el HTML no trae el modal de la lista (o le faltan piezas), se crea aquí */
+function asegurarModalTemario() {
+    const ids = [
+        "modalTemario", "tituloModalTemario", "nombreAsignaturaTemario",
+        "botonEliminarTemario", "cancelarModalTemario", "guardarModalTemario"
+    ];
+
+    if (ids.every(id => document.getElementById(id))) return;
+
+    const viejo = document.getElementById("modalTemario");
+    if (viejo) viejo.remove();
+
+    const modalNuevo = document.createElement("div");
+    modalNuevo.id = "modalTemario";
+    modalNuevo.className = "modal oculto";
+    modalNuevo.innerHTML = `
+        <div class="modal-contenido">
+            <h2 id="tituloModalTemario">Añadir asignatura</h2>
+            <label for="nombreAsignaturaTemario">Nombre</label>
+            <input type="text" id="nombreAsignaturaTemario" maxlength="80" placeholder="Nombre de la asignatura">
+            <div class="acciones-modal">
+                <button id="botonEliminarTemario" style="display:none">Eliminar</button>
+                <button id="cancelarModalTemario">Cancelar</button>
+                <button id="guardarModalTemario" class="guardar">Guardar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modalNuevo);
+}
+
+asegurarModalTemario();
+
 const modalTemario = document.getElementById("modalTemario");
 const nombreTemarioInput = document.getElementById("nombreAsignaturaTemario");
 
@@ -1877,7 +1909,8 @@ contenedorTemario.parentNode.insertBefore(barraLista, contenedorTemario);
    EVENTOS Y ARRANQUE DE LA LISTA
    ========================= */
 
-document.getElementById("btnAnadirAsignaturaTemario").onclick = abrirModalTemario;
+const botonAnadirTemarioViejo = document.getElementById("btnAnadirAsignaturaTemario");
+if (botonAnadirTemarioViejo) botonAnadirTemarioViejo.onclick = abrirModalTemario;
 document.getElementById("cancelarModalTemario").onclick = cerrarModalTemario;
 document.getElementById("guardarModalTemario").onclick = confirmarModalTemario;
 
