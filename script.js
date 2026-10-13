@@ -1,1964 +1,1094 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getDatabase,
-    ref,
-    set,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-/* =========================
-   CONFIGURACIÓN DE FIREBASE
-   ========================= */
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDNLanoPTp76LIVO_CiiT3CZvlz6C0mNAk",
-    authDomain: "horarios-42998.firebaseapp.com",
-    databaseURL: "https://horarios-42998-default-rtdb.firebaseio.com",
-    projectId: "horarios-42998",
-    storageBucket: "horarios-42998.firebasestorage.app",
-    messagingSenderId: "823146395738",
-    appId: "1:823146395738:web:3d6255ab3999b618270063"
-};
-
-const appFirebase = initializeApp(firebaseConfig);
-const db = getDatabase(appFirebase);
-const horariosRef = ref(db, "horarios");
-const asignaturasRef = ref(db, "asignaturas");
-
-let vistaActual = "semana";
-let fechaActual = new Date();
-let eventoEditando = null;
-
-let eventoArrastrado = null;
-let eventoPendiente = null;
-let arrastreRealizado = false;
-
-let horarios = [];
-let horariosCargados = false;
-
-/* =========================
-   ELEMENTOS
-   ========================= */
-
-const calendario = document.getElementById("calendario");
-const tituloCalendario = document.getElementById("tituloCalendario");
-const modal = document.getElementById("modal");
-
-const todoElDia = document.getElementById("todoElDia");
-const horaInicio = document.getElementById("horaInicio");
-const horaFin = document.getElementById("horaFin");
-
-const nombresDias = [
-    "Domingo",
-    "Lunes",
-    "Martes",
-    "Miércoles",
-    "Jueves",
-    "Viernes",
-    "Sábado"
-];
-
-const nombresMeses = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre"
-];
-
-/* =========================
-   GUARDAR Y ESCUCHAR DATOS (FIREBASE)
-   ========================= */
-
-function guardarDatos() {
-    // Nunca se guarda hasta haber leído antes lo que hay en Firebase (evita pisar los datos con una lista vacía)
-    if (!horariosCargados) {
-        console.warn("Guardado cancelado: los eventos todavía no se han cargado.");
-        return;
-    }
-    set(horariosRef, horarios).catch(function (error) {
-        console.error("Error al guardar en Firebase:", error);
-    });
+* {
+    box-sizing: border-box;
 }
 
-function escucharDatos() {
-    onValue(horariosRef, function (snapshot) {
-        const datos = snapshot.val();
-        horariosCargados = true;
+:root {
+    --bg: #0f1115;
+    --bg-panel: #1a1d24;
+    --bg-panel-alt: #20242c;
+    --borde: #2b2f38;
+    --texto: #e5e7eb;
+    --texto-suave: #9ca3af;
+    --acento: #6366f1;
+    --peligro: #dc2626;
+}
 
-        if (!datos) {
-            horarios = [];
-        } else if (Array.isArray(datos)) {
-            horarios = datos;
-        } else {
-            horarios = Object.values(datos);
-        }
-
-        mostrarCalendario();
-    }, function (error) {
-        console.error("Error al leer de Firebase:", error);
-    });
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--texto);
 }
 
 /* =========================
-   TOGGLE COMPLETADO / TACHADO
+   CABECERA CENTRADA
    ========================= */
 
-function alternarCompletado(evento) {
-    evento.completado = !evento.completado;
-    guardarDatos();
-    mostrarCalendario();
+header {
+    background: var(--bg-panel);
+    padding: 16px;
+    border-bottom: 1px solid var(--borde);
+    width: 100%;
+    position: relative;
+}
+
+.header-contenedor {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    text-align: center !important;
+}
+
+h1 {
+    margin: 0 0 10px 0 !important;
+    font-size: 22px;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+.secciones,
+.vistas {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 8px auto 0 auto !important;
+    width: 100% !important;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    background: var(--bg-panel-alt);
+    color: var(--texto);
+    font-size: 14px;
+}
+
+button:hover {
+    filter: brightness(1.15);
+}
+
+button.active {
+    background: var(--acento);
+    color: white;
+}
+
+main {
+    max-width: 1300px;
+    margin: 20px auto;
+    padding: 0 12px;
+}
+
+.seccion-oculta {
+    display: none;
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.barra-superior h2 {
+    min-width: 180px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.boton-añadir {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    margin: 20px auto;
+    background: var(--acento);
+    color: white;
+    font-weight: bold;
+    padding: 12px 16px;
+}
+
+#calendario {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 /* =========================
-   ARRASTRAR EVENTOS (RATÓN / HTML5)
+   BOTÓN DIVIDIR PANTALLA (ESQUINA SUPERIOR DERECHA)
    ========================= */
 
-function iniciarArrastre(e, evento, elemento) {
-    eventoArrastrado = { id: evento.id };
-    arrastreRealizado = true;
-
-    elemento.classList.add("arrastrando");
-    e.dataTransfer.effectAllowed = "copyMove";
-    e.dataTransfer.setData("text/plain", String(evento.id));
+.btn-dividir {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    z-index: 5;
 }
 
-function terminarArrastre(elemento) {
-    elemento.classList.remove("arrastrando");
-    setTimeout(() => {
-        arrastreRealizado = false;
-    }, 100);
+.aviso-dividir {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--texto-suave);
+    text-align: center;
 }
 
-function permitirSoltar(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add("dia-destino");
-    e.dataTransfer.dropEffect = "move";
+.aviso-dividir[hidden] {
+    display: none;
 }
 
-function salirZonaSoltar(e) {
-    e.currentTarget.classList.remove("dia-destino");
-}
-
-function soltarEvento(e, nuevaFecha) {
-    e.preventDefault();
-    e.currentTarget.classList.remove("dia-destino");
-
-    if (!eventoArrastrado) return;
-
-    const id = eventoArrastrado.id;
-    eventoArrastrado = null;
-
-    manejarSoltarEvento(id, nuevaFecha);
-}
-
-/* =========================
-   ARRASTRAR Y DOBLE TOQUE (TÁCTIL / MÓVIL)
-   ========================= */
-
-const UMBRAL_MOVIMIENTO = 8;
-let toqueArrastre = null;
-let ultimoToqueTiempo = 0;
-let toqueTimer = null;
-
-function iniciarToqueEvento(e, evento, elemento) {
-    if (e.touches.length !== 1) return;
-
-    const toque = e.touches[0];
-
-    toqueArrastre = {
-        evento: evento,
-        elementoOriginal: elemento,
-        startX: toque.clientX,
-        startY: toque.clientY,
-        dragging: false,
-        moved: false,
-        celdaActual: null,
-        fantasma: null
-    };
-}
-
-function iniciarArrastreTactil() {
-    if (!toqueArrastre) return;
-
-    toqueArrastre.dragging = true;
-    const original = toqueArrastre.elementoOriginal;
-    original.classList.add("arrastrando");
-
-    if (navigator.vibrate) {
-        navigator.vibrate(30);
-    }
-
-    const fantasma = original.cloneNode(true);
-    fantasma.classList.add("fantasma-arrastre");
-    fantasma.classList.remove("arrastrando");
-
-    const rect = original.getBoundingClientRect();
-    fantasma.style.width = rect.width + "px";
-
-    document.body.appendChild(fantasma);
-    toqueArrastre.fantasma = fantasma;
-
-    moverFantasma(toqueArrastre.startX, toqueArrastre.startY);
-}
-
-function moverFantasma(x, y) {
-    if (!toqueArrastre || !toqueArrastre.fantasma) return;
-    toqueArrastre.fantasma.style.left = x + "px";
-    toqueArrastre.fantasma.style.top = y + "px";
-}
-
-function actualizarZonaDestinoTactil(x, y) {
-    const elementoDebajo = document.elementFromPoint(x, y);
-    const celda = elementoDebajo ? elementoDebajo.closest(".dia, .dia-mes") : null;
-
-    document.querySelectorAll(".dia-destino").forEach(el => el.classList.remove("dia-destino"));
-
-    if (celda && celda.dataset.fecha) {
-        celda.classList.add("dia-destino");
-        toqueArrastre.celdaActual = celda;
-    } else {
-        toqueArrastre.celdaActual = null;
-    }
-}
-
-function moverToqueEvento(e) {
-    if (!toqueArrastre) return;
-
-    const toque = e.touches[0];
-    const dx = toque.clientX - toqueArrastre.startX;
-    const dy = toque.clientY - toqueArrastre.startY;
-
-    if (!toqueArrastre.dragging) {
-        if (Math.abs(dx) > UMBRAL_MOVIMIENTO || Math.abs(dy) > UMBRAL_MOVIMIENTO) {
-            toqueArrastre.moved = true;
-            iniciarArrastreTactil();
-        }
-        return;
-    }
-
-    e.preventDefault();
-    moverFantasma(toque.clientX, toque.clientY);
-    actualizarZonaDestinoTactil(toque.clientX, toque.clientY);
-}
-
-function finalizarToqueEvento(e) {
-    if (!toqueArrastre) return;
-
-    const estabaArrastrando = toqueArrastre.dragging;
-    const seMovio = toqueArrastre.moved;
-    const evento = toqueArrastre.evento;
-    const celda = toqueArrastre.celdaActual;
-    const original = toqueArrastre.elementoOriginal;
-    const fantasma = toqueArrastre.fantasma;
-
-    if (fantasma) fantasma.remove();
-    document.querySelectorAll(".dia-destino").forEach(el => el.classList.remove("dia-destino"));
-
-    if (estabaArrastrando && celda && celda.dataset.fecha) {
-        terminarArrastre(original);
-        manejarSoltarEvento(evento.id, celda.dataset.fecha);
-    } else if (!seMovio) {
-        const ahora = Date.now();
-        const diferenciaTiempo = ahora - ultimoToqueTiempo;
-
-        if (diferenciaTiempo < 300 && diferenciaTiempo > 0) {
-            if (toqueTimer) {
-                clearTimeout(toqueTimer);
-                toqueTimer = null;
-            }
-            e.preventDefault();
-            alternarCompletado(evento);
-            ultimoToqueTiempo = 0;
-        } else {
-            ultimoToqueTiempo = ahora;
-            toqueTimer = setTimeout(() => {
-                editarEvento(evento);
-                toqueTimer = null;
-            }, 300);
-        }
-    }
-
-    toqueArrastre = null;
-}
-
-function cancelarToqueEvento() {
-    if (!toqueArrastre) return;
-    if (toqueArrastre.fantasma) toqueArrastre.fantasma.remove();
-    if (toqueArrastre.dragging) terminarArrastre(toqueArrastre.elementoOriginal);
-
-    document.querySelectorAll(".dia-destino").forEach(el => el.classList.remove("dia-destino"));
-    toqueArrastre = null;
-}
-
-/* =========================
-   LÓGICA COMÚN DE SOLTAR
-   ========================= */
-
-function manejarSoltarEvento(idEvento, nuevaFecha) {
-    const eventoOriginal = horarios.find(evento => String(evento.id) === String(idEvento));
-
-    if (!eventoOriginal) return;
-
-    if (eventoOriginal.fecha === nuevaFecha) {
-        mostrarCalendario();
-        return;
-    }
-
-    eventoPendiente = {
-        evento: eventoOriginal,
-        nuevaFecha: nuevaFecha
-    };
-
-    const modalArrastre = document.getElementById("modalArrastre");
-    if (modalArrastre) modalArrastre.classList.remove("oculto");
-}
-
-/* =========================
-   MOVER / COPIAR / CANCELAR EVENTO
-   ========================= */
-
-function moverEventoArrastrado() {
-    if (!eventoPendiente) return;
-    eventoPendiente.evento.fecha = eventoPendiente.nuevaFecha;
-    guardarDatos();
-    cerrarModalArrastre();
-    eventoPendiente = null;
-    mostrarCalendario();
-}
-
-function copiarEventoArrastrado() {
-    if (!eventoPendiente) return;
-    const original = eventoPendiente.evento;
-    const copia = {
-        ...original,
-        id: Date.now() + Math.floor(Math.random() * 10000),
-        fecha: eventoPendiente.nuevaFecha
-    };
-    horarios.push(copia);
-    guardarDatos();
-    cerrarModalArrastre();
-    eventoPendiente = null;
-    mostrarCalendario();
-}
-
-function cancelarEventoArrastrado() {
-    cerrarModalArrastre();
-    eventoPendiente = null;
-    mostrarCalendario();
-}
-
-function cerrarModalArrastre() {
-    const modalArrastre = document.getElementById("modalArrastre");
-    if (modalArrastre) modalArrastre.classList.add("oculto");
-}
-
-const botonMover = document.getElementById("botonMover");
-const botonCopiar = document.getElementById("botonCopiar");
-const botonCancelarArrastre = document.getElementById("botonCancelarArrastre");
-
-if (botonMover) botonMover.addEventListener("click", moverEventoArrastrado);
-if (botonCopiar) botonCopiar.addEventListener("click", copiarEventoArrastrado);
-if (botonCancelarArrastre) botonCancelarArrastre.addEventListener("click", cancelarEventoArrastrado);
-
-/* =========================
-   MOSTRAR CALENDARIO
-   ========================= */
-
-function mostrarCalendario() {
-    if (vistaActual === "semana") {
-        mostrarSemana();
-    } else {
-        mostrarMes();
-    }
-}
-
-/* =========================
-   ADJUNTAR EVENTOS A UN ELEMENTO ARRASTRABLE
-   ========================= */
-
-const esDispositivoTactil = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-
-function hacerArrastrable(elemento, evento) {
-    if (!esDispositivoTactil) {
-        elemento.draggable = true;
-        let clickTimer = null;
-
-        elemento.addEventListener("dragstart", function (e) {
-            if (clickTimer) clearTimeout(clickTimer);
-            iniciarArrastre(e, evento, elemento);
-        });
-
-        elemento.addEventListener("dragend", function () {
-            terminarArrastre(elemento);
-        });
-
-        elemento.addEventListener("click", function () {
-            if (arrastreRealizado) return;
-
-            if (clickTimer === null) {
-                clickTimer = setTimeout(() => {
-                    clickTimer = null;
-                    editarEvento(evento);
-                }, 250);
-            }
-        });
-
-        elemento.addEventListener("dblclick", function (e) {
-            e.stopPropagation();
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-                clickTimer = null;
-            }
-            alternarCompletado(evento);
-        });
-
-        return;
-    }
-
-    elemento.addEventListener("touchstart", function (e) {
-        iniciarToqueEvento(e, evento, elemento);
-    }, { passive: true });
-
-    elemento.addEventListener("touchmove", moverToqueEvento, { passive: false });
-    elemento.addEventListener("touchend", finalizarToqueEvento);
-    elemento.addEventListener("touchcancel", cancelarToqueEvento);
-}
-
-function hacerZonaDeSoltar(elemento, fechaTexto) {
-    elemento.dataset.fecha = fechaTexto;
-    elemento.addEventListener("dragover", permitirSoltar);
-    elemento.addEventListener("dragleave", salirZonaSoltar);
-    elemento.addEventListener("drop", function (e) {
-        soltarEvento(e, fechaTexto);
-    });
-}
-
-function horaAMinutos(horaTexto) {
-    if (!horaTexto) return 0;
-    const [h, m] = horaTexto.split(":").map(Number);
-    return h * 60 + (m || 0);
+#contenedorSecciones {
+    width: 100%;
 }
 
 /* =========================
    VISTA SEMANAL
    ========================= */
 
-const ALTURA_HORA_PX = 90;
+.calendario-semana {
+    display: grid;
+    grid-template-columns: 65px repeat(7, minmax(0, 1fr));
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0 16px;
+}
 
-function mostrarSemana() {
-    calendario.innerHTML = "";
+.columna-horas {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--borde);
+    background: var(--bg-panel-alt);
+    user-select: none;
+}
 
-    const d = new Date(fechaActual);
-    const diaActual = d.getDay();
-    let lunes = new Date(d);
+.header-hora-vacio {
+    min-height: 80px;
+    border-bottom: 1px solid var(--borde);
+}
 
-    if (diaActual === 0) {
-        lunes.setDate(d.getDate() - 6);
-    } else {
-        lunes.setDate(d.getDate() - (diaActual - 1));
-    }
+.cuerpo-horas {
+    position: relative;
+    border-bottom: 1px solid var(--borde);
+}
 
-    tituloCalendario.textContent = `${nombresMeses[lunes.getMonth()]} ${lunes.getFullYear()}`;
+.marca-hora {
+    font-size: 11px;
+    color: var(--texto-suave);
+    text-align: center;
+    line-height: 12px;
+    padding-top: 6px;
+    border-bottom: 1px dashed var(--borde);
+    box-sizing: border-box;
+}
 
-    const contenedor = document.createElement("div");
-    contenedor.className = "calendario-semana";
+.marca-hora:last-child {
+    border-bottom: 1px solid var(--borde);
+}
 
-    const fechasSemana = [];
-    for (let dia = 1; dia <= 7; dia++) {
-        const fechaDia = new Date(lunes);
-        fechaDia.setDate(lunes.getDate() + dia - 1);
-        const año = fechaDia.getFullYear();
-        const mes = String(fechaDia.getMonth() + 1).padStart(2, "0");
-        const numero = String(fechaDia.getDate()).padStart(2, "0");
-        fechasSemana.push({
-            fechaTexto: `${año}-${mes}-${numero}`,
-            fechaObjeto: fechaDia
-        });
-    }
+.dia {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--borde);
+    position: relative;
+    box-sizing: border-box;
+}
 
-    const eventosSemanaConHora = horarios.filter(evento => {
-        return fechasSemana.some(f => f.fechaTexto === evento.fecha) && !evento.todoElDia && evento.inicio;
-    });
+.dia:first-of-type {
+    border-left: 1px solid var(--borde);
+}
 
-    let horaInicioRango = 6;
-    let horaFinRango = 18;
+.dia:last-child {
+    border-right: 1px solid var(--borde);
+}
 
-    if (eventosSemanaConHora.length > 0) {
-        let minMinutos = 24 * 60;
-        let maxMinutos = 0;
+.cabecera-dia-semana {
+    border-bottom: 1px solid var(--borde);
+    background: var(--bg-panel-alt);
+    position: relative;
+    z-index: 10;
+}
 
-        eventosSemanaConHora.forEach(evento => {
-            const minInicio = horaAMinutos(evento.inicio);
-            const minFin = horaAMinutos(evento.fin);
-            if (minInicio < minMinutos) minMinutos = minInicio;
-            if (minFin > maxMinutos) maxMinutos = minFin;
-        });
+.nombre-dia {
+    padding: 10px 5px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    border-bottom: 1px solid var(--borde);
+}
 
-        const horaMin = Math.floor(minMinutos / 60);
-        const horaMax = Math.ceil(maxMinutos / 60);
+.area-todo-el-dia {
+    min-height: 40px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.2);
+}
 
-        if (horaMin < horaInicioRango) horaInicioRango = horaMin;
-        if (horaMax > horaFinRango) horaFinRango = horaMax;
-    }
+.evento-todo-dia {
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    color: white;
+    cursor: grab;
+}
 
-    const totalHorasRango = horaFinRango - horaInicioRango;
-    const alturaTotalPx = totalHorasRango * ALTURA_HORA_PX;
+.rejilla-horas {
+    position: relative;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--borde);
+}
 
-    // 1. COLUMNA IZQUIERDA (HORAS)
-    const columnaHoras = document.createElement("div");
-    columnaHoras.className = "columna-horas";
+.linea-hora {
+    border-bottom: 1px solid var(--borde);
+    box-sizing: border-box;
+}
 
-    const vacioHeader = document.createElement("div");
-    vacioHeader.className = "header-hora-vacio";
-    columnaHoras.appendChild(vacioHeader);
+/* =========================
+   REGLA INFALIBLE PARA BORDE EN EVENTOS "TODO EL DÍA"
+   ========================= */
 
-    const cuerpoHoras = document.createElement("div");
-    cuerpoHoras.className = "cuerpo-horas";
-    cuerpoHoras.style.height = `${alturaTotalPx}px`;
+.dia.dia-con-evento-todo-dia::after,
+.dia-mes.dia-con-evento-todo-dia::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    outline: 3px solid var(--color-borde-dia) !important;
+    outline-offset: -3px !important;
+    pointer-events: none;
+    z-index: 50 !important;
+}
 
-    for (let h = horaInicioRango; h < horaFinRango; h++) {
-        const marcaHora = document.createElement("div");
-        marcaHora.className = "marca-hora";
-        marcaHora.style.height = `${ALTURA_HORA_PX}px`;
-        marcaHora.textContent = `${String(h).padStart(2, "0")}:00`;
-        cuerpoHoras.appendChild(marcaHora);
-    }
-    columnaHoras.appendChild(cuerpoHoras);
-    contenedor.appendChild(columnaHoras);
+.evento-posicionado {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: white;
+    cursor: grab;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 2;
+}
 
-    // 2. COLUMNAS DE DÍAS (LUNES A DOMINGO)
-    fechasSemana.forEach(fInfo => {
-        const columna = document.createElement("div");
-        columna.className = "dia";
+.evento-posicionado .evento-contenido {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-size: 12px;
+    line-height: 1.3;
+}
 
-        hacerZonaDeSoltar(columna, fInfo.fechaTexto);
+.evento-posicionado strong {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-        const cabecera = document.createElement("div");
-        cabecera.className = "cabecera-dia-semana";
-
-        const nombre = document.createElement("div");
-        nombre.className = "nombre-dia";
-        nombre.textContent = `${nombresDias[fInfo.fechaObjeto.getDay()]} ${fInfo.fechaObjeto.getDate()}/${fInfo.fechaObjeto.getMonth() + 1}`;
-        cabecera.appendChild(nombre);
-
-        const areaTodoElDia = document.createElement("div");
-        areaTodoElDia.className = "area-todo-el-dia";
-
-        const rejillaHoras = document.createElement("div");
-        rejillaHoras.className = "rejilla-horas";
-        rejillaHoras.style.height = `${alturaTotalPx}px`;
-
-        for (let h = horaInicioRango; h < horaFinRango; h++) {
-            const lineaHora = document.createElement("div");
-            lineaHora.className = "linea-hora";
-            lineaHora.style.height = `${ALTURA_HORA_PX}px`;
-            rejillaHoras.appendChild(lineaHora);
-        }
-
-        const eventosDia = horarios.filter(evento => evento.fecha === fInfo.fechaTexto);
-
-        const eventoTodoElDia = eventosDia.find(evento => evento.todoElDia);
-        if (eventoTodoElDia) {
-            columna.classList.add("dia-con-evento-todo-dia");
-            columna.style.setProperty("--color-borde-dia", eventoTodoElDia.color || "#6366f1");
-        }
-
-        eventosDia.forEach(function (evento) {
-            const elemento = document.createElement("div");
-            elemento.className = "evento";
-
-            if (evento.completado) {
-                elemento.classList.add("completado");
-            }
-            elemento.style.background = evento.color;
-
-            if (evento.todoElDia) {
-                elemento.classList.add("evento-todo-dia");
-                elemento.innerHTML = `<strong>${evento.nombre}</strong>`;
-                hacerArrastrable(elemento, evento);
-                areaTodoElDia.appendChild(elemento);
-            } else {
-                elemento.classList.add("evento-posicionado");
-
-                const minutosInicio = horaAMinutos(evento.inicio);
-                const minutosFin = horaAMinutos(evento.fin);
-                
-                const minutosDesdeInicioRango = minutosInicio - (horaInicioRango * 60);
-                const duracionMinutos = minutosFin - minutosInicio;
-
-                const topPx = (minutosDesdeInicioRango / 60) * ALTURA_HORA_PX;
-                const heightPx = Math.max((duracionMinutos / 60) * ALTURA_HORA_PX, 35);
-
-                elemento.style.top = `${topPx}px`;
-                elemento.style.height = `${heightPx}px`;
-
-                const horario = `${evento.inicio} - ${evento.fin}`;
-                elemento.innerHTML = `
-                    <div class="evento-contenido">
-                        <strong>${evento.nombre}</strong>
-                        <span>${horario}</span>
-                    </div>
-                `;
-
-                hacerArrastrable(elemento, evento);
-                rejillaHoras.appendChild(elemento);
-            }
-        });
-
-        cabecera.appendChild(areaTodoElDia);
-        columna.appendChild(cabecera);
-        columna.appendChild(rejillaHoras);
-        contenedor.appendChild(columna);
-    });
-
-    calendario.appendChild(contenedor);
+.evento-posicionado span {
+    font-size: 11px;
+    opacity: 0.9;
 }
 
 /* =========================
    VISTA MENSUAL
    ========================= */
 
-function mostrarMes() {
-    calendario.innerHTML = "";
-    const año = fechaActual.getFullYear();
-    const mes = fechaActual.getMonth();
+.calendario-mes {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    padding: 0 16px;
+}
 
-    tituloCalendario.textContent = `${nombresMeses[mes]} ${año}`;
+.cabecera-mes {
+    background: var(--bg-panel-alt);
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid var(--borde);
+}
 
-    const contenedor = document.createElement("div");
-    contenedor.className = "calendario-mes";
+.dia-mes {
+    min-height: 120px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 8px;
+    border-right: 1px solid var(--borde);
+    border-bottom: 1px solid var(--borde);
+    position: relative;
+}
 
-    const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-    diasSemana.forEach(function (dia) {
-        const elemento = document.createElement("div");
-        elemento.className = "cabecera-mes";
-        elemento.textContent = dia;
-        contenedor.appendChild(elemento);
-    });
+.numero-dia {
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: var(--texto-suave);
+}
 
-    let primerDia = new Date(año, mes, 1).getDay();
-    if (primerDia === 0) primerDia = 7;
+.evento-mes {
+    color: white;
+    border-radius: 5px;
+    padding: 4px 6px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    cursor: grab;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    touch-action: pan-y;
+    transition: opacity 0.2s ease;
+}
 
-    const diasMes = new Date(año, mes + 1, 0).getDate();
-
-    for (let i = 1; i < primerDia; i++) {
-        const vacio = document.createElement("div");
-        vacio.className = "dia-mes";
-        contenedor.appendChild(vacio);
-    }
-
-    for (let dia = 1; dia <= diasMes; dia++) {
-        const elemento = document.createElement("div");
-        elemento.className = "dia-mes";
-
-        const numero = document.createElement("div");
-        numero.className = "numero-dia";
-        numero.textContent = dia;
-        elemento.appendChild(numero);
-
-        const mesTexto = String(mes + 1).padStart(2, "0");
-        const diaTexto = String(dia).padStart(2, "0");
-        const fechaTexto = `${año}-${mesTexto}-${diaTexto}`;
-
-        hacerZonaDeSoltar(elemento, fechaTexto);
-
-        const eventosDia = horarios.filter(evento => evento.fecha === fechaTexto);
-
-        const eventoTodoElDia = eventosDia.find(evento => evento.todoElDia);
-        if (eventoTodoElDia) {
-            elemento.classList.add("dia-con-evento-todo-dia");
-            elemento.style.setProperty("--color-borde-dia", eventoTodoElDia.color || "#6366f1");
-        }
-
-        eventosDia.sort(function (a, b) {
-            if (a.todoElDia && !b.todoElDia) return -1;
-            if (!a.todoElDia && b.todoElDia) return 1;
-            return (a.inicio || "").localeCompare(b.inicio || "");
-        });
-
-        eventosDia.forEach(function (evento) {
-            const eventoElemento = document.createElement("div");
-            eventoElemento.className = "evento-mes";
-
-            if (evento.completado) {
-                eventoElemento.classList.add("completado");
-            }
-
-            eventoElemento.style.background = evento.color;
-
-            const texto = document.createElement("span");
-            texto.className = "evento-mes-texto";
-
-            if (evento.todoElDia) {
-                texto.innerHTML = `${evento.nombre} <small>Todo el día</small>`;
-            } else {
-                texto.innerHTML = `${evento.inicio} ${evento.nombre}`;
-            }
-
-            eventoElemento.appendChild(texto);
-            hacerArrastrable(eventoElemento, evento);
-            elemento.appendChild(eventoElemento);
-        });
-
-        contenedor.appendChild(elemento);
-    }
-
-    calendario.appendChild(contenedor);
+.evento-mes:active {
+    cursor: grabbing;
 }
 
 /* =========================
-   AUTORRELLENADO INTELIGENTE DE HORAS Y TAB
+   TACHADO DE EVENTOS COMPLETADOS
    ========================= */
 
-function normalizarHora(input) {
-    let val = input.value.trim();
-    if (!val) return;
-
-    // Si escriben solo un número o dos (ej. "8" o "14") -> "08:00" o "14:00"
-    if (/^\d{1,2}$/.test(val)) {
-        input.value = val.padStart(2, "0") + ":00";
-        return;
-    }
-
-    // Si escriben 3 dígitos (ej. "930") -> "09:30"
-    if (/^\d{3}$/.test(val)) {
-        input.value = "0" + val[0] + ":" + val.slice(1);
-        return;
-    }
-
-    // Si escriben 4 dígitos (ej. "1430") -> "14:30"
-    if (/^\d{4}$/.test(val)) {
-        input.value = val.slice(0, 2) + ":" + val.slice(2);
-        return;
-    }
-
-    // Si escriben con dos puntos (ej. "8:", "8:5", "08:3")
-    if (val.includes(":")) {
-        let partes = val.split(":");
-        let h = partes[0].trim().padStart(2, "0") || "00";
-        let m = partes[1].trim().padEnd(2, "0") || "00";
-        input.value = h + ":" + m;
-    }
+.evento.completado,
+.evento.completado *,
+.evento-mes.completado,
+.evento-mes.completado * {
+    text-decoration: line-through !important;
+    text-decoration-color: rgba(255, 255, 255, 0.8) !important;
+    text-decoration-thickness: 2px !important;
 }
 
-horaInicio.addEventListener("keydown", function (e) {
-    if (e.key === "Tab" && !e.shiftKey) {
-        e.preventDefault();
-        normalizarHora(horaInicio);
-        horaFin.focus();
-    }
-});
-
-horaInicio.addEventListener("blur", function () {
-    normalizarHora(this);
-});
-
-horaFin.addEventListener("blur", function () {
-    normalizarHora(this);
-});
+.evento.completado,
+.evento-mes.completado {
+    opacity: 0.55;
+    filter: grayscale(20%);
+}
 
 /* =========================
-   CONTROLES Y MODALES
+   ARRASTRAR
    ========================= */
 
-function actualizarHoras() {
-    if (todoElDia.checked) {
-        horaInicio.disabled = true;
-        horaFin.disabled = true;
-        horaInicio.value = "";
-        horaFin.value = "";
-    } else {
-        horaInicio.disabled = false;
-        horaFin.disabled = false;
-    }
+.dia-destino {
+    background: rgba(99, 102, 241, 0.12);
+    outline: 2px dashed var(--acento);
+    outline-offset: -2px;
 }
 
-todoElDia.addEventListener("change", actualizarHoras);
-
-function abrirModal() {
-    eventoEditando = null;
-    document.getElementById("tituloModal").textContent = "Añadir evento";
-    document.getElementById("nombreEvento").value = "";
-    document.getElementById("fechaEvento").value = "";
-    horaInicio.value = "";
-    horaFin.value = "";
-    todoElDia.checked = false;
-    actualizarHoras();
-    document.getElementById("colorEvento").value = "#6366f1";
-    document.getElementById("botonEliminar").style.display = "none";
-    modal.classList.remove("oculto");
+.arrastrando {
+    opacity: 0.5;
 }
 
-function cerrarModal() {
-    modal.classList.add("oculto");
-    eventoEditando = null;
+.fantasma-arrastre {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 100000;
+    opacity: 0.92;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, -50%) scale(1.03);
 }
-
-function editarEvento(evento) {
-    eventoEditando = evento;
-    document.getElementById("tituloModal").textContent = "Editar evento";
-    document.getElementById("nombreEvento").value = evento.nombre;
-    document.getElementById("fechaEvento").value = evento.fecha || "";
-    horaInicio.value = evento.inicio || "";
-    horaFin.value = evento.fin || "";
-    todoElDia.checked = evento.todoElDia === true;
-    actualizarHoras();
-    document.getElementById("colorEvento").value = evento.color || "#6366f1";
-    document.getElementById("botonEliminar").style.display = "block";
-    modal.classList.remove("oculto");
-}
-
-function guardarEvento() {
-    normalizarHora(horaInicio);
-    normalizarHora(horaFin);
-
-    const nombre = document.getElementById("nombreEvento").value.trim();
-    const fecha = document.getElementById("fechaEvento").value;
-    const inicio = horaInicio.value;
-    const fin = horaFin.value;
-    const color = document.getElementById("colorEvento").value;
-    const esTodoElDia = todoElDia.checked;
-
-    if (!nombre || !fecha) {
-        alert("Completa el nombre y la fecha.");
-        return;
-    }
-
-    if (!esTodoElDia && (!inicio || !fin)) {
-        alert("Introduce las horas o marca 'Todo el día'.");
-        return;
-    }
-
-    if (!esTodoElDia && inicio >= fin) {
-        alert("La hora de finalización debe ser posterior.");
-        return;
-    }
-
-    if (eventoEditando) {
-        eventoEditando.nombre = nombre;
-        eventoEditando.fecha = fecha;
-        eventoEditando.inicio = esTodoElDia ? "" : inicio;
-        eventoEditando.fin = esTodoElDia ? "" : fin;
-        eventoEditando.color = color;
-        eventoEditando.todoElDia = esTodoElDia;
-    } else {
-        horarios.push({
-            id: Date.now(),
-            nombre: nombre,
-            fecha: fecha,
-            inicio: esTodoElDia ? "" : inicio,
-            fin: esTodoElDia ? "" : fin,
-            color: color,
-            todoElDia: esTodoElDia,
-            completado: false
-        });
-    }
-
-    guardarDatos();
-    cerrarModal();
-    mostrarCalendario();
-}
-
-function eliminarEvento() {
-    if (!eventoEditando) return;
-    const id = eventoEditando.id;
-    horarios = horarios.filter(evento => evento.id !== id);
-    guardarDatos();
-    cerrarModal();
-    mostrarCalendario();
-}
-
-document.getElementById("btnAnadirEvento").onclick = abrirModal;
-document.getElementById("cancelarEvento").onclick = cerrarModal;
-document.getElementById("guardarEvento").onclick = guardarEvento;
-document.getElementById("botonEliminar").onclick = eliminarEvento;
-
-document.getElementById("vistaSemana").onclick = function () {
-    vistaActual = "semana";
-    document.getElementById("vistaSemana").classList.add("active");
-    document.getElementById("vistaMes").classList.remove("active");
-    mostrarCalendario();
-};
-
-document.getElementById("vistaMes").onclick = function () {
-    vistaActual = "mes";
-    document.getElementById("vistaMes").classList.add("active");
-    document.getElementById("vistaSemana").classList.remove("active");
-    mostrarCalendario();
-};
 
 /* =========================
-   NAVEGACIÓN COORDINADA (SEMANA / MES)
-   ========================= */
-
-document.getElementById("mesAnterior").onclick = function () {
-    if (vistaActual === "semana") {
-        fechaActual.setDate(fechaActual.getDate() - 7);
-    } else {
-        fechaActual.setMonth(fechaActual.getMonth() - 1);
-    }
-    mostrarCalendario();
-};
-
-document.getElementById("mesSiguiente").onclick = function () {
-    if (vistaActual === "semana") {
-        fechaActual.setDate(fechaActual.getDate() + 7);
-    } else {
-        fechaActual.setMonth(fechaActual.getMonth() + 1);
-    }
-    mostrarCalendario();
-};
-
-/* =========================================================
-   CAMBIAR SECCIÓN + PANTALLA DIVIDIDA
-   ========================================================= */
-
-const SECCIONES = {
-    calendario: { boton: "seccionCalendarioBtn", panel: "seccionCalendario", mostrar: mostrarCalendario },
-    tablero:    { boton: "seccionTableroBtn",    panel: "seccionTablero",    mostrar: mostrarTablero },
-    temario:    { boton: "seccionTemarioBtn",    panel: "seccionTemario",    mostrar: mostrarTemario }
-};
-
-const ORDEN_SECCIONES = Object.keys(SECCIONES);
-const MAX_SECCIONES_DIVIDIDAS = 2;
-
-let pantallaDividida = false;
-let seccionesVisibles = ["calendario"];
-
-function leerLocal(clave, porDefecto) {
-    try {
-        const valor = localStorage.getItem(clave);
-        return valor ? JSON.parse(valor) : porDefecto;
-    } catch (error) {
-        return porDefecto;
-    }
-}
-
-function escribirLocal(clave, valor) {
-    try {
-        localStorage.setItem(clave, JSON.stringify(valor));
-    } catch (error) {
-        /* sin almacenamiento local: no pasa nada */
-    }
-}
-
-function cargarVistaGuardada() {
-    const guardada = leerLocal("vistaSecciones", null);
-    if (!guardada || !guardada.dividida || !Array.isArray(guardada.visibles)) return;
-
-    const validas = guardada.visibles
-        .filter(id => SECCIONES[id])
-        .slice(0, MAX_SECCIONES_DIVIDIDAS);
-
-    if (validas.length < 2) return;
-
-    pantallaDividida = true;
-    seccionesVisibles = validas;
-}
-
-cargarVistaGuardada();
-
-function aplicarSecciones() {
-    ORDEN_SECCIONES.forEach(function (id) {
-        const visible = seccionesVisibles.includes(id);
-        document.getElementById(SECCIONES[id].panel).classList.toggle("seccion-oculta", !visible);
-        document.getElementById(SECCIONES[id].boton).classList.toggle("active", visible);
-    });
-
-    document.body.classList.toggle("dividida", pantallaDividida && seccionesVisibles.length > 1);
-    document.getElementById("btnDividir").classList.toggle("active", pantallaDividida);
-    document.getElementById("avisoDividir").hidden = !pantallaDividida;
-
-    seccionesVisibles.forEach(id => SECCIONES[id].mostrar());
-
-    escribirLocal("vistaSecciones", {
-        dividida: pantallaDividida,
-        visibles: seccionesVisibles
-    });
-}
-
-function pulsarSeccion(id) {
-    if (!pantallaDividida) {
-        seccionesVisibles = [id];
-    } else if (seccionesVisibles.includes(id)) {
-        // En pantalla dividida, pulsar una pestaña visible la quita (siempre queda al menos una)
-        if (seccionesVisibles.length > 1) {
-            seccionesVisibles = seccionesVisibles.filter(x => x !== id);
-        }
-    } else {
-        seccionesVisibles.push(id);
-        if (seccionesVisibles.length > MAX_SECCIONES_DIVIDIDAS) {
-            seccionesVisibles.shift();
-        }
-    }
-
-    aplicarSecciones();
-}
-
-ORDEN_SECCIONES.forEach(function (id) {
-    document.getElementById(SECCIONES[id].boton).onclick = function () {
-        pulsarSeccion(id);
-    };
-});
-
-document.getElementById("btnDividir").onclick = function () {
-    pantallaDividida = !pantallaDividida;
-
-    if (pantallaDividida) {
-        if (seccionesVisibles.length < 2) {
-            const otra = ORDEN_SECCIONES.find(id => !seccionesVisibles.includes(id));
-            seccionesVisibles.unshift(otra);
-        }
-    } else {
-        // Al salir de la división nos quedamos con la última pestaña pulsada
-        seccionesVisibles = [seccionesVisibles[seccionesVisibles.length - 1]];
-    }
-
-    aplicarSecciones();
-};
-
-/* =========================================================
    TABLERO DE ASIGNATURAS
-   ========================================================= */
-
-let asignaturas = [];
-let tableroCargado = false;
-let asignaturaEditando = null;
-let asignaturaArrastrada = null;
-
-const columnasTablero = [
-    { id: "espera", titulo: "En espera" },
-    { id: "empezado", titulo: "Empezado" },
-    { id: "repasar", titulo: "Solo repasar" },
-    { id: "terminado", titulo: "Terminado" }
-];
-
-const modalAsignatura = document.getElementById("modalAsignatura");
-const nombreAsignaturaInput = document.getElementById("nombreAsignatura");
-const descripcionAsignaturaInput = document.getElementById("descripcionAsignatura");
-const progresoAsignaturaInput = document.getElementById("progresoAsignatura");
-const valorProgresoAsignatura = document.getElementById("valorProgresoAsignatura");
-
-/* =========================
-   GUARDAR Y ESCUCHAR TABLERO (FIREBASE)
    ========================= */
 
-function guardarTablero() {
-    if (!tableroCargado) {
-        console.warn("Guardado cancelado: el tablero todavía no se ha cargado.");
-        return;
-    }
-    set(asignaturasRef, asignaturas).catch(function (error) {
-        console.error("Error al guardar el tablero en Firebase:", error);
-    });
+#tablero {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
 }
 
-function escucharTablero() {
-    onValue(asignaturasRef, function (snapshot) {
-        const datos = snapshot.val();
-        tableroCargado = true;
-
-        if (!datos) {
-            asignaturas = [];
-        } else if (Array.isArray(datos)) {
-            asignaturas = datos;
-        } else {
-            asignaturas = Object.values(datos);
-        }
-
-        mostrarTablero();
-    }, function (error) {
-        console.error("Error al leer el tablero de Firebase:", error);
-    });
+.columna-tablero {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
 }
 
-/* =========================
-   MOSTRAR TABLERO
-   ========================= */
-
-function mostrarTablero() {
-    const contenedorTablero = document.getElementById("tablero");
-    contenedorTablero.innerHTML = "";
-
-    columnasTablero.forEach(function (columna) {
-        const columnaElemento = document.createElement("div");
-        columnaElemento.className = "columna-tablero";
-
-        const cabecera = document.createElement("div");
-        cabecera.className = "cabecera-columna";
-        cabecera.textContent = columna.titulo;
-        columnaElemento.appendChild(cabecera);
-
-        const listaTarjetas = document.createElement("div");
-        listaTarjetas.className = "lista-tarjetas";
-
-        const asignaturasColumna = asignaturas
-            .filter(a => a.columna === columna.id)
-            .sort((a, b) => a.orden - b.orden);
-
-        asignaturasColumna.forEach(function (asignatura) {
-            listaTarjetas.appendChild(crearTarjetaAsignatura(asignatura));
-        });
-
-        listaTarjetas.addEventListener("dragover", function (e) {
-            e.preventDefault();
-            listaTarjetas.classList.add("columna-destino");
-        });
-
-        listaTarjetas.addEventListener("dragleave", function () {
-            listaTarjetas.classList.remove("columna-destino");
-        });
-
-        listaTarjetas.addEventListener("drop", function (e) {
-            e.preventDefault();
-            listaTarjetas.classList.remove("columna-destino");
-            soltarAsignaturaAlFinal(columna.id);
-        });
-
-        columnaElemento.appendChild(listaTarjetas);
-        contenedorTablero.appendChild(columnaElemento);
-    });
+.cabecera-columna {
+    background: var(--bg-panel-alt);
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid var(--borde);
 }
 
-/* =========================
-   CREAR TARJETA
-   ========================= */
+.lista-tarjetas {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 70px;
+}
 
-function crearTarjetaAsignatura(asignatura) {
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "tarjeta-asignatura";
-    tarjeta.draggable = true;
+.lista-tarjetas.columna-destino {
+    background: rgba(99, 102, 241, 0.08);
+    outline: 2px dashed var(--acento);
+    outline-offset: -2px;
+    border-radius: 8px;
+}
 
-    const contenido = document.createElement("div");
-    contenido.className = "tarjeta-contenido";
+.tarjeta-asignatura {
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: grab;
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
 
-    const nombre = document.createElement("strong");
-    nombre.textContent = asignatura.nombre;
-    contenido.appendChild(nombre);
+.tarjeta-asignatura:active {
+    cursor: grabbing;
+}
 
-    if (asignatura.descripcion) {
-        const descripcion = document.createElement("p");
-        descripcion.className = "tarjeta-descripcion";
-        descripcion.textContent = asignatura.descripcion;
-        contenido.appendChild(descripcion);
-    }
+.arrastrando-tarjeta {
+    opacity: 0.5;
+}
 
-    tarjeta.appendChild(contenido);
+.tarjeta-contenido {
+    flex: 1;
+    min-width: 0;
+}
 
-    if (asignatura.columna === "empezado") {
-        const barra = document.createElement("div");
-        barra.className = "barra-progreso-vertical";
+.tarjeta-contenido strong {
+    display: block;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
 
-        const relleno = document.createElement("div");
-        relleno.className = "relleno-progreso";
-        relleno.style.height = (asignatura.progreso || 0) + "%";
-        barra.appendChild(relleno);
+.tarjeta-descripcion {
+    margin: 0;
+    font-size: 12px;
+    color: var(--texto-suave);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 
-        const porcentaje = document.createElement("span");
-        porcentaje.className = "porcentaje-progreso";
-        porcentaje.textContent = (asignatura.progreso || 0) + "%";
+.barra-progreso-vertical {
+    width: 10px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
 
-        tarjeta.appendChild(barra);
-        tarjeta.appendChild(porcentaje);
-    }
+.relleno-progreso {
+    width: 100%;
+    background: var(--acento);
+    border-radius: 5px;
+    transition: height 0.2s ease;
+}
 
-    let arrastreEnCurso = false;
-
-    tarjeta.addEventListener("click", function () {
-        if (arrastreEnCurso) return;
-        editarAsignatura(asignatura);
-    });
-
-    tarjeta.addEventListener("dragstart", function (e) {
-        asignaturaArrastrada = asignatura.id;
-        arrastreEnCurso = true;
-        tarjeta.classList.add("arrastrando-tarjeta");
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", String(asignatura.id));
-    });
-
-    tarjeta.addEventListener("dragend", function () {
-        tarjeta.classList.remove("arrastrando-tarjeta");
-        setTimeout(function () {
-            arrastreEnCurso = false;
-        }, 50);
-        asignaturaArrastrada = null;
-    });
-
-    tarjeta.addEventListener("dragover", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (asignaturaArrastrada === null || asignaturaArrastrada === asignatura.id) {
-            return;
-        }
-
-        const rect = tarjeta.getBoundingClientRect();
-        const mitad = rect.top + rect.height / 2;
-        const antes = e.clientY < mitad;
-
-        moverAsignaturaJuntoA(asignaturaArrastrada, asignatura.id, antes);
-    });
-
-    tarjeta.addEventListener("drop", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-
-    return tarjeta;
+.porcentaje-progreso {
+    font-size: 10px;
+    color: var(--texto-suave);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* =========================
-   MOVER / REORDENAR TARJETAS
+   LISTA (ASIGNATURAS CON TEMAS Y ESTADO)
    ========================= */
 
-function moverAsignaturaJuntoA(idArrastrada, idReferencia, antes) {
-    if (idArrastrada === idReferencia) return;
-
-    const indiceArrastrada = asignaturas.findIndex(a => a.id === idArrastrada);
-    const indiceReferencia = asignaturas.findIndex(a => a.id === idReferencia);
-
-    if (indiceArrastrada === -1 || indiceReferencia === -1) return;
-
-    const posicionDeseada = antes ? indiceReferencia : indiceReferencia + 1;
-
-    if (posicionDeseada === indiceArrastrada || posicionDeseada === indiceArrastrada + 1) {
-        return;
-    }
-
-    const arrastrada = asignaturas[indiceArrastrada];
-    const referencia = asignaturas[indiceReferencia];
-
-    asignaturas.splice(indiceArrastrada, 1);
-
-    const nuevoIndiceReferencia = asignaturas.findIndex(a => a.id === idReferencia);
-    const indiceInsercion = antes ? nuevoIndiceReferencia : nuevoIndiceReferencia + 1;
-
-    arrastrada.columna = referencia.columna;
-
-    asignaturas.splice(indiceInsercion, 0, arrastrada);
-
-    reindexarOrdenTablero();
-    mostrarTablero();
+/* El botón antiguo ya no hace falta: se añade desde la barra de arriba */
+#btnAnadirAsignaturaTemario {
+    display: none;
 }
 
-function soltarAsignaturaAlFinal(columnaId) {
-    if (!asignaturaArrastrada) return;
-
-    const arrastrada = asignaturas.find(a => a.id === asignaturaArrastrada);
-    if (!arrastrada) return;
-
-    asignaturas = asignaturas.filter(a => a.id !== asignaturaArrastrada);
-    arrastrada.columna = columnaId;
-    asignaturas.push(arrastrada);
-
-    reindexarOrdenTablero();
-    mostrarTablero();
+.lista-barra-superior {
+    display: flex;
+    gap: 8px;
+    max-width: 560px;
+    margin: 20px auto;
 }
 
-function reindexarOrdenTablero() {
-    columnasTablero.forEach(function (columna) {
-        let contador = 0;
-        asignaturas
-            .filter(a => a.columna === columna.id)
-            .forEach(function (a) {
-                a.orden = contador;
-                contador++;
-            });
-    });
+.lista-barra-superior input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    color: var(--texto);
+    font-size: 15px;
+    font-family: inherit;
+}
 
-    guardarTablero();
+.lista-barra-superior input:focus {
+    outline: none;
+    border-color: var(--acento);
+}
+
+#temario,
+#notas {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+body.dividida #temario,
+body.dividida #notas {
+    max-width: none;
+}
+
+.lista-vacia {
+    margin: 0;
+    padding: 30px 0;
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 14px;
+}
+
+.lista-asignatura {
+    min-height: 0;
+}
+
+.lista-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    text-align: left;
+    background: var(--bg-panel);
+    border-bottom: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.lista-cabecera:hover {
+    background: var(--bg-panel-alt);
+}
+
+.lista-flecha {
+    width: 12px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--acento);
+}
+
+.lista-titulo {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    word-break: break-word;
+}
+
+.lista-resumen {
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--texto-suave);
+    white-space: nowrap;
+}
+
+.lista-editar {
+    padding: 4px 8px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--texto-suave);
+}
+
+.lista-editar:hover {
+    color: var(--texto);
+}
+
+.lista-barra {
+    height: 3px;
+    background: var(--borde);
+}
+
+.lista-barra-relleno {
+    height: 100%;
+    background: var(--acento);
+    transition: width 0.2s ease;
+}
+
+.lista-cuerpo {
+    padding: 6px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista-sin-temas {
+    margin: 0;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--texto-suave);
+    text-align: center;
+}
+
+.lista-temas {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Filas sin caja: solo una línea fina entre ellas */
+.tema-fila {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--borde);
+    border-radius: 6px;
+}
+
+.tema-fila:last-child {
+    border-bottom: none;
+}
+
+.tema-fila:hover {
+    background: var(--bg-panel-alt);
+}
+
+/* Punto de color según el estado */
+.tema-fila::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--color-estado, #9ca3af);
+}
+
+.tema-fila[data-estado="porver"]    { --color-estado: #9ca3af; }
+.tema-fila[data-estado="leido"]     { --color-estado: #60a5fa; }
+.tema-fila[data-estado="repasar"]   { --color-estado: #fbbf24; }
+.tema-fila[data-estado="terminado"] { --color-estado: #4ade80; }
+
+.tema-nombre-input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--texto);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.tema-nombre-input:focus {
+    outline: none;
+    border-color: var(--acento);
+    background: var(--bg-panel);
+}
+
+.tema-fila[data-estado="terminado"] .tema-nombre-input {
+    text-decoration: line-through;
+    opacity: 0.55;
+}
+
+.tema-estado {
+    flex: 0 0 auto;
+    padding: 5px 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    color: var(--texto-suave);
+    font-size: 12px;
+    font-family: inherit;
+    color-scheme: dark;
+    cursor: pointer;
+}
+
+.tema-estado:focus {
+    outline: none;
+    border-color: var(--acento);
+}
+
+.tema-borrar {
+    padding: 4px 8px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--texto-suave);
+    opacity: 0.5;
+}
+
+.tema-fila:hover .tema-borrar {
+    opacity: 1;
+}
+
+.tema-borrar:hover {
+    color: #f87171;
+}
+
+.lista-nuevo-tema {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.lista-nuevo-tema input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 10px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    color: var(--texto);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.lista-nuevo-tema input:focus {
+    outline: none;
+    border-color: var(--acento);
+}
+
+.lista-btn-add {
+    padding: 8px 14px;
+    background: var(--acento);
+    color: white;
+    font-weight: bold;
 }
 
 /* =========================
-   MODAL ASIGNATURA
+   MODAL AÑADIR / EDITAR
    ========================= */
 
-progresoAsignaturaInput.addEventListener("input", function () {
-    valorProgresoAsignatura.textContent = progresoAsignaturaInput.value + "%";
-});
-
-function abrirModalAsignatura() {
-    asignaturaEditando = null;
-    document.getElementById("tituloModalAsignatura").textContent = "Añadir asignatura";
-    nombreAsignaturaInput.value = "";
-    descripcionAsignaturaInput.value = "";
-    progresoAsignaturaInput.value = 0;
-    valorProgresoAsignatura.textContent = "0%";
-    document.getElementById("botonEliminarAsignatura").style.display = "none";
-    modalAsignatura.classList.remove("oculto");
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 9000;
 }
 
-function editarAsignatura(asignatura) {
-    asignaturaEditando = asignatura;
-    document.getElementById("tituloModalAsignatura").textContent = "Editar asignatura";
-    nombreAsignaturaInput.value = asignatura.nombre;
-    descripcionAsignaturaInput.value = asignatura.descripcion || "";
-    progresoAsignaturaInput.value = asignatura.progreso || 0;
-    valorProgresoAsignatura.textContent = (asignatura.progreso || 0) + "%";
-    document.getElementById("botonEliminarAsignatura").style.display = "block";
-    modalAsignatura.classList.remove("oculto");
+.modal.oculto {
+    display: none;
 }
 
-function cerrarModalAsignatura() {
-    modalAsignatura.classList.add("oculto");
-    asignaturaEditando = null;
+.modal-contenido {
+    background: var(--bg-panel);
+    width: 100%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 22px;
+    border-radius: 15px;
+    border: 1px solid var(--borde);
 }
 
-function guardarAsignatura() {
-    const nombre = nombreAsignaturaInput.value.trim();
-    const descripcion = descripcionAsignaturaInput.value.trim();
-    const progreso = Number(progresoAsignaturaInput.value);
-
-    if (!nombre) {
-        alert("Ponle un nombre a la asignatura.");
-        return;
-    }
-
-    if (asignaturaEditando) {
-        asignaturaEditando.nombre = nombre;
-        asignaturaEditando.descripcion = descripcion;
-        asignaturaEditando.progreso = progreso;
-    } else {
-        const enEspera = asignaturas.filter(a => a.columna === "espera");
-
-        asignaturas.push({
-            id: Date.now() + Math.floor(Math.random() * 10000),
-            nombre: nombre,
-            descripcion: descripcion,
-            columna: "espera",
-            progreso: progreso,
-            orden: enEspera.length
-        });
-    }
-
-    guardarTablero();
-    cerrarModalAsignatura();
-    mostrarTablero();
+.modal-contenido h2 {
+    margin-top: 0;
 }
 
-function eliminarAsignatura() {
-    if (!asignaturaEditando) return;
-
-    const confirmar = confirm(`¿Quieres eliminar "${asignaturaEditando.nombre}"?`);
-    if (!confirmar) return;
-
-    asignaturas = asignaturas.filter(a => a.id !== asignaturaEditando.id);
-
-    reindexarOrdenTablero();
-    cerrarModalAsignatura();
-    mostrarTablero();
+.modal-contenido label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--texto-suave);
 }
 
-document.getElementById("btnAnadirAsignatura").onclick = abrirModalAsignatura;
-document.getElementById("cancelarAsignatura").onclick = cerrarModalAsignatura;
-document.getElementById("guardarAsignatura").onclick = guardarAsignatura;
-document.getElementById("botonEliminarAsignatura").onclick = eliminarAsignatura;
-
-/* =========================================================
-   LISTA: ASIGNATURAS CON LISTA DE TEMAS Y ESTADO
-   ========================================================= */
-
-const temarioRef = ref(db, "temario");
-
-const ESTADOS_TEMA = [
-    { id: "porver", titulo: "Por ver" },
-    { id: "leido", titulo: "Leído" },
-    { id: "repasar", titulo: "Repasar/practicar solo" },
-    { id: "terminado", titulo: "Terminado" }
-];
-
-let temario = [];
-let temarioCargado = false;
-let renderTemarioPendiente = false;
-let contadorIdTemario = 0;
-let asignaturaTemarioEditandoId = null;
-
-let temasCerrados = leerLocal("temarioCerradas", []);
-if (!Array.isArray(temasCerrados)) temasCerrados = [];
-
-const seccionTemario = document.getElementById("seccionTemario");
-const contenedorTemario = document.getElementById("temario");
-/* Si el HTML no trae el modal de la lista (o le faltan piezas), se crea aquí */
-function asegurarModalTemario() {
-    const ids = [
-        "modalTemario", "tituloModalTemario", "nombreAsignaturaTemario",
-        "botonEliminarTemario", "cancelarModalTemario", "guardarModalTemario"
-    ];
-
-    if (ids.every(id => document.getElementById(id))) return;
-
-    const viejo = document.getElementById("modalTemario");
-    if (viejo) viejo.remove();
-
-    const modalNuevo = document.createElement("div");
-    modalNuevo.id = "modalTemario";
-    modalNuevo.className = "modal oculto";
-    modalNuevo.innerHTML = `
-        <div class="modal-contenido">
-            <h2 id="tituloModalTemario">Añadir asignatura</h2>
-            <label for="nombreAsignaturaTemario">Nombre</label>
-            <input type="text" id="nombreAsignaturaTemario" maxlength="80" placeholder="Nombre de la asignatura">
-            <div class="acciones-modal">
-                <button id="botonEliminarTemario" style="display:none">Eliminar</button>
-                <button id="cancelarModalTemario">Cancelar</button>
-                <button id="guardarModalTemario" class="guardar">Guardar</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modalNuevo);
+.modal-contenido input,
+.modal-contenido select,
+.modal-contenido textarea {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-panel-alt);
+    border: 1px solid var(--borde);
+    border-radius: 7px;
+    font-size: 15px;
+    color: var(--texto);
+    font-family: inherit;
 }
 
-asegurarModalTemario();
+.modal-contenido textarea {
+    resize: vertical;
+}
 
-const modalTemario = document.getElementById("modalTemario");
-const nombreTemarioInput = document.getElementById("nombreAsignaturaTemario");
+.modal-contenido input[type="date"],
+.modal-contenido input[type="time"] {
+    color-scheme: dark;
+}
 
-function nuevoIdTemario() {
-    contadorIdTemario++;
-    return Date.now() * 1000 + (contadorIdTemario % 1000);
+.modal-contenido input[type="range"] {
+    padding: 0;
+    accent-color: var(--acento);
+}
+
+.valor-rango {
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 13px;
+    margin-top: 4px;
 }
 
 /* =========================
-   GUARDAR Y ESCUCHAR (FIREBASE)
+   TODO EL DÍA
    ========================= */
 
-function normalizarTemario(datos) {
-    const lista = !datos ? [] : (Array.isArray(datos) ? datos : Object.values(datos));
-
-    return lista.filter(Boolean).map(function (asignatura) {
-        // Firebase no guarda arrays vacíos: si no hay temas, "temas" llega sin definir
-        const temasBrutos = asignatura.temas
-            ? (Array.isArray(asignatura.temas) ? asignatura.temas : Object.values(asignatura.temas))
-            : [];
-
-        return {
-            ...asignatura,
-            temas: temasBrutos.filter(Boolean)
-        };
-    });
+.checkbox-todo-dia {
+    display: flex;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 5px;
 }
 
-function guardarTemario() {
-    if (!temarioCargado) {
-        console.warn("Guardado cancelado: la lista todavía no se ha cargado.");
-        return;
-    }
-    set(temarioRef, temario).catch(function (error) {
-        console.error("Error al guardar la lista en Firebase:", error);
-    });
+.modal-contenido .checkbox-todo-dia input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px;
+    margin: 0 6px 0 0 !important;
+    padding: 0 !important;
 }
 
-function guardarYMostrarTemario() {
-    guardarTemario();
-    mostrarTemario();
-}
-
-function hayEdicionTemarioEnCurso() {
-    const activo = document.activeElement;
-    return !!(activo && activo.tagName === "INPUT" && seccionTemario.contains(activo));
-}
-
-function escucharTemario() {
-    onValue(temarioRef, function (snapshot) {
-        temario = normalizarTemario(snapshot.val());
-        temarioCargado = true;
-
-        // Si estás escribiendo, no se redibuja hasta que sueltes el campo
-        if (hayEdicionTemarioEnCurso()) {
-            renderTemarioPendiente = true;
-            return;
-        }
-
-        mostrarTemario();
-    }, function (error) {
-        console.error("Error al leer la lista de Firebase:", error);
-        contenedorTemario.innerHTML = "";
-        const aviso = document.createElement("p");
-        aviso.className = "lista-vacia";
-        aviso.textContent = "No se pudo leer la lista (" + (error && error.code ? error.code : "error") + "). Revisa las reglas de Firebase.";
-        contenedorTemario.appendChild(aviso);
-    });
-}
-
-seccionTemario.addEventListener("focusout", function () {
-    if (!renderTemarioPendiente) return;
-
-    setTimeout(function () {
-        if (renderTemarioPendiente && !hayEdicionTemarioEnCurso()) {
-            mostrarTemario();
-        }
-    }, 0);
-});
-
-/* =========================
-   MODAL AÑADIR / EDITAR ASIGNATURA (LISTA)
-   ========================= */
-
-function buscarAsignaturaTemario(id) {
-    return temario.find(a => String(a.id) === String(id));
-}
-
-function abrirModalTemario() {
-    asignaturaTemarioEditandoId = null;
-    document.getElementById("tituloModalTemario").textContent = "Añadir asignatura";
-    nombreTemarioInput.value = "";
-    document.getElementById("botonEliminarTemario").style.display = "none";
-    modalTemario.classList.remove("oculto");
-    setTimeout(() => nombreTemarioInput.focus(), 0);
-}
-
-function editarAsignaturaTemario(idAsignatura) {
-    const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura) return;
-
-    asignaturaTemarioEditandoId = asignatura.id;
-    document.getElementById("tituloModalTemario").textContent = "Editar asignatura";
-    nombreTemarioInput.value = asignatura.nombre;
-    document.getElementById("botonEliminarTemario").style.display = "block";
-    modalTemario.classList.remove("oculto");
-    setTimeout(() => nombreTemarioInput.focus(), 0);
-}
-
-function cerrarModalTemario() {
-    modalTemario.classList.add("oculto");
-    asignaturaTemarioEditandoId = null;
-}
-
-function confirmarModalTemario() {
-    const nombre = nombreTemarioInput.value.trim();
-
-    if (!nombre) {
-        alert("Ponle un nombre a la asignatura.");
-        return;
-    }
-
-    if (asignaturaTemarioEditandoId !== null) {
-        const asignatura = buscarAsignaturaTemario(asignaturaTemarioEditandoId);
-        if (asignatura) asignatura.nombre = nombre;
-    } else {
-        temario.push({
-            id: nuevoIdTemario(),
-            nombre: nombre,
-            temas: []
-        });
-    }
-
-    guardarYMostrarTemario();
-    cerrarModalTemario();
-}
-
-function eliminarAsignaturaTemario(idAsignatura) {
-    const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura) return false;
-
-    const confirmar = confirm(`¿Quieres eliminar "${asignatura.nombre}" y todos sus temas?`);
-    if (!confirmar) return false;
-
-    temario = temario.filter(a => String(a.id) !== String(idAsignatura));
-    guardarYMostrarTemario();
-    return true;
+.modal-contenido .checkbox-todo-dia label {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* =========================
-   ACCIONES SOBRE TEMAS
+   BOTONES DEL MODAL
    ========================= */
 
-function alternarAsignaturaTemario(idAsignatura) {
-    const id = String(idAsignatura);
-
-    if (temasCerrados.includes(id)) {
-        temasCerrados = temasCerrados.filter(x => x !== id);
-    } else {
-        temasCerrados.push(id);
-    }
-
-    escribirLocal("temarioCerradas", temasCerrados);
-    mostrarTemario();
+.acciones-modal {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 25px;
 }
 
-function limpiarLineaTema(texto) {
-    // Quita viñetas o numeración al pegar listas ("- tema", "1. tema", "2) tema")
-    return texto.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, "").trim();
+.guardar {
+    background: var(--acento);
+    color: white;
 }
 
-function anadirTemas(idAsignatura, textos) {
-    const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura) return;
-
-    const nombres = textos.map(limpiarLineaTema).filter(Boolean);
-    if (nombres.length === 0) return;
-
-    if (!asignatura.temas) asignatura.temas = [];
-
-    nombres.forEach(function (nombre) {
-        asignatura.temas.push({
-            id: nuevoIdTemario(),
-            nombre: nombre,
-            estado: "porver"
-        });
-    });
-
-    // Si estaba plegada, la desplegamos para ver lo añadido
-    temasCerrados = temasCerrados.filter(x => x !== String(idAsignatura));
-    escribirLocal("temarioCerradas", temasCerrados);
-
-    guardarYMostrarTemario();
-
-    const campo = contenedorTemario.querySelector(`[data-add-tema="${idAsignatura}"]`);
-    if (campo) campo.focus();
-}
-
-function buscarTema(idAsignatura, idTema) {
-    const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura || !asignatura.temas) return null;
-    return asignatura.temas.find(t => String(t.id) === String(idTema)) || null;
-}
-
-function renombrarTema(idAsignatura, idTema, nombre) {
-    const tema = buscarTema(idAsignatura, idTema);
-    if (!tema) return;
-
-    tema.nombre = nombre;
-    guardarTemario();
-}
-
-function cambiarEstadoTema(idAsignatura, idTema, estado) {
-    if (!ESTADOS_TEMA.some(e => e.id === estado)) return;
-
-    const tema = buscarTema(idAsignatura, idTema);
-    if (!tema) return;
-
-    tema.estado = estado;
-    guardarYMostrarTemario();
-}
-
-function eliminarTema(idAsignatura, idTema) {
-    const asignatura = buscarAsignaturaTemario(idAsignatura);
-    if (!asignatura || !asignatura.temas) return;
-
-    asignatura.temas = asignatura.temas.filter(t => String(t.id) !== String(idTema));
-    guardarYMostrarTemario();
+#botonEliminar,
+#botonEliminarAsignatura,
+#botonEliminarTemario,
+#botonEliminarNotas {
+    background: var(--peligro);
+    color: white;
 }
 
 /* =========================
-   MOSTRAR LISTA
+   INSTRUCCIÓN DE ARRASTRE
    ========================= */
 
-function conectarEdicionTexto(input, alGuardar) {
-    const original = input.value;
-
-    input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            input.blur();
-        } else if (e.key === "Escape") {
-            input.value = original;
-            input.blur();
-        }
-    });
-
-    input.addEventListener("change", function () {
-        const nuevo = input.value.trim();
-
-        if (!nuevo || nuevo === original) {
-            input.value = original;
-            return;
-        }
-
-        alGuardar(nuevo);
-    });
-}
-
-function crearFilaTema(idAsignatura, tema) {
-    const estado = ESTADOS_TEMA.some(e => e.id === tema.estado) ? tema.estado : "porver";
-
-    const fila = document.createElement("div");
-    fila.className = "tema-fila";
-    fila.dataset.estado = estado;
-
-    const nombre = document.createElement("input");
-    nombre.type = "text";
-    nombre.className = "tema-nombre-input";
-    nombre.value = tema.nombre;
-    nombre.maxLength = 120;
-    conectarEdicionTexto(nombre, function (nuevo) {
-        renombrarTema(idAsignatura, tema.id, nuevo);
-    });
-
-    const selector = document.createElement("select");
-    selector.className = "tema-estado";
-
-    ESTADOS_TEMA.forEach(function (e) {
-        const opcion = document.createElement("option");
-        opcion.value = e.id;
-        opcion.textContent = e.titulo;
-        opcion.selected = e.id === estado;
-        selector.appendChild(opcion);
-    });
-
-    selector.addEventListener("change", function () {
-        cambiarEstadoTema(idAsignatura, tema.id, selector.value);
-    });
-
-    const borrar = document.createElement("button");
-    borrar.className = "tema-borrar";
-    borrar.textContent = "✕";
-    borrar.title = "Eliminar tema";
-    borrar.addEventListener("click", function () {
-        eliminarTema(idAsignatura, tema.id);
-    });
-
-    fila.appendChild(nombre);
-    fila.appendChild(selector);
-    fila.appendChild(borrar);
-
-    return fila;
-}
-
-function crearTarjetaTemario(asignatura) {
-    const temas = asignatura.temas || [];
-    const total = temas.length;
-    const terminados = temas.filter(t => t.estado === "terminado").length;
-    const porcentaje = total ? Math.round((terminados / total) * 100) : 0;
-    const cerrada = temasCerrados.includes(String(asignatura.id));
-
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "columna-tablero lista-asignatura";
-
-    /* --- Cabecera (clic = plegar/desplegar) --- */
-    const cabecera = document.createElement("div");
-    cabecera.className = "cabecera-columna lista-cabecera";
-    cabecera.title = cerrada ? "Desplegar" : "Plegar";
-
-    const flecha = document.createElement("span");
-    flecha.className = "lista-flecha";
-    flecha.textContent = cerrada ? "▸" : "▾";
-
-    const titulo = document.createElement("span");
-    titulo.className = "lista-titulo";
-    titulo.textContent = asignatura.nombre;
-
-    const resumen = document.createElement("span");
-    resumen.className = "lista-resumen";
-    resumen.textContent = total ? `${terminados}/${total}` : "Sin temas";
-    resumen.title = "Temas terminados";
-
-    const editar = document.createElement("button");
-    editar.className = "lista-editar";
-    editar.textContent = "✎";
-    editar.title = "Editar asignatura";
-    editar.addEventListener("click", function (e) {
-        e.stopPropagation();
-        editarAsignaturaTemario(asignatura.id);
-    });
-
-    cabecera.addEventListener("click", function () {
-        alternarAsignaturaTemario(asignatura.id);
-    });
-
-    cabecera.appendChild(flecha);
-    cabecera.appendChild(titulo);
-    cabecera.appendChild(resumen);
-    cabecera.appendChild(editar);
-    tarjeta.appendChild(cabecera);
-
-    /* --- Barra de progreso (temas terminados) --- */
-    const barra = document.createElement("div");
-    barra.className = "lista-barra";
-
-    const relleno = document.createElement("div");
-    relleno.className = "lista-barra-relleno";
-    relleno.style.width = porcentaje + "%";
-    barra.appendChild(relleno);
-    tarjeta.appendChild(barra);
-
-    if (cerrada) return tarjeta;
-
-    /* --- Cuerpo: temas + añadir --- */
-    const cuerpo = document.createElement("div");
-    cuerpo.className = "lista-cuerpo";
-
-    if (total === 0) {
-        const vacio = document.createElement("p");
-        vacio.className = "lista-sin-temas";
-        vacio.textContent = "Aún no hay temas.";
-        cuerpo.appendChild(vacio);
-    } else {
-        const lista = document.createElement("div");
-        lista.className = "lista-temas";
-        temas.forEach(t => lista.appendChild(crearFilaTema(asignatura.id, t)));
-        cuerpo.appendChild(lista);
-    }
-
-    const filaNuevo = document.createElement("div");
-    filaNuevo.className = "lista-nuevo-tema";
-
-    const campoNuevo = document.createElement("input");
-    campoNuevo.type = "text";
-    campoNuevo.placeholder = "Añadir tema (Enter). Puedes pegar una lista";
-    campoNuevo.maxLength = 120;
-    campoNuevo.dataset.addTema = asignatura.id;
-
-    const botonNuevo = document.createElement("button");
-    botonNuevo.className = "lista-btn-add";
-    botonNuevo.textContent = "+";
-    botonNuevo.title = "Añadir tema";
-
-    function confirmarNuevoTema() {
-        const texto = campoNuevo.value;
-        campoNuevo.value = "";
-        anadirTemas(asignatura.id, [texto]);
-    }
-
-    campoNuevo.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            confirmarNuevoTema();
-        }
-    });
-
-    // Pegar varias líneas = añadir varios temas de golpe
-    campoNuevo.addEventListener("paste", function (e) {
-        const portapapeles = e.clipboardData || window.clipboardData;
-        const texto = portapapeles ? portapapeles.getData("text") : "";
-
-        if (texto && /[\r\n]/.test(texto.trim())) {
-            e.preventDefault();
-            anadirTemas(asignatura.id, texto.split(/\r?\n/));
-        }
-    });
-
-    botonNuevo.addEventListener("click", confirmarNuevoTema);
-
-    filaNuevo.appendChild(campoNuevo);
-    filaNuevo.appendChild(botonNuevo);
-    cuerpo.appendChild(filaNuevo);
-
-    tarjeta.appendChild(cuerpo);
-
-    return tarjeta;
-}
-
-function mostrarTemario() {
-    renderTemarioPendiente = false;
-    contenedorTemario.innerHTML = "";
-
-    if (!temarioCargado) {
-        const cargando = document.createElement("p");
-        cargando.className = "lista-vacia";
-        cargando.textContent = "Cargando...";
-        contenedorTemario.appendChild(cargando);
-        return;
-    }
-
-    if (temario.length === 0) {
-        const vacio = document.createElement("p");
-        vacio.className = "lista-vacia";
-        vacio.textContent = "Todavía no hay asignaturas. Escribe una arriba para empezar.";
-        contenedorTemario.appendChild(vacio);
-        return;
-    }
-
-    temario.forEach(function (asignatura) {
-        contenedorTemario.appendChild(crearTarjetaTemario(asignatura));
-    });
+.instruccion-arrastre {
+    text-align: center;
+    margin: 0 0 10px;
+    color: var(--texto-suave);
+    font-size: 13px;
 }
 
 /* =========================
-   BARRA SUPERIOR: AÑADIR ASIGNATURA RÁPIDO
+   MODAL COPIAR / MOVER
    ========================= */
 
-escucharTemario();
-
-try {
-// Quita cualquier campo suelto "Nueva asignatura" que hubiera ya en la página (p. ej. copiado en el HTML)
-document.querySelectorAll('input[placeholder^="Nueva asignatura"]').forEach(function (campo) {
-    const padre = campo.parentElement;
-    campo.remove();
-    if (padre && padre.children.length === 0 && padre !== document.body && padre.id !== "temario" && padre !== seccionTemario) {
-        padre.remove();
-    }
-});
-
-const barraLista = document.createElement("div");
-barraLista.className = "lista-barra-superior";
-
-const campoNuevaAsignatura = document.createElement("input");
-campoNuevaAsignatura.type = "text";
-campoNuevaAsignatura.placeholder = "Nueva asignatura (Enter para añadir)";
-campoNuevaAsignatura.maxLength = 80;
-
-const botonNuevaAsignatura = document.createElement("button");
-botonNuevaAsignatura.className = "lista-btn-add";
-botonNuevaAsignatura.textContent = "+";
-botonNuevaAsignatura.title = "Añadir asignatura";
-
-function anadirAsignaturaRapida() {
-    const nombre = campoNuevaAsignatura.value.trim();
-    if (!nombre || !temarioCargado) return;
-
-    temario.push({
-        id: nuevoIdTemario(),
-        nombre: nombre,
-        temas: []
-    });
-
-    campoNuevaAsignatura.value = "";
-    guardarYMostrarTemario();
-    campoNuevaAsignatura.focus();
+.modal-arrastre {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999 !important;
+    backdrop-filter: blur(4px);
 }
 
-campoNuevaAsignatura.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        anadirAsignaturaRapida();
-    }
-});
-botonNuevaAsignatura.addEventListener("click", anadirAsignaturaRapida);
+.modal-arrastre.oculto {
+    display: none !important;
+}
 
-barraLista.appendChild(campoNuevaAsignatura);
-barraLista.appendChild(botonNuevaAsignatura);
-contenedorTemario.parentNode.insertBefore(barraLista, contenedorTemario);
-} catch (error) {
-    console.error("Error al crear la barra de la lista:", error);
+.caja-arrastre {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    margin: 0 !important;
+    padding: 24px;
+    background: var(--bg-panel);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+}
+
+.caja-arrastre h3 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    color: var(--texto);
+}
+
+.caja-arrastre p {
+    margin: 0 0 22px;
+    color: var(--texto-suave);
+    font-size: 14px;
+}
+
+.botones-arrastre {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.botones-arrastre button {
+    flex: 1;
+    padding: 11px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.boton-mover {
+    background: var(--acento);
+    color: white;
+}
+
+.boton-copiar {
+    background: var(--bg-panel-alt);
+    color: white;
+}
+
+.boton-cancelar-arrastre {
+    background: transparent;
+    color: var(--texto-suave);
+    border: 1px solid var(--borde) !important;
+}
+
+.botones-arrastre button:hover {
+    filter: brightness(1.15);
 }
 
 /* =========================
-   EVENTOS Y ARRANQUE DE LA LISTA
+   PANTALLA DIVIDIDA
    ========================= */
 
-const botonAnadirTemarioViejo = document.getElementById("btnAnadirAsignaturaTemario");
-if (botonAnadirTemarioViejo) botonAnadirTemarioViejo.onclick = abrirModalTemario;
-document.getElementById("cancelarModalTemario").onclick = cerrarModalTemario;
-document.getElementById("guardarModalTemario").onclick = confirmarModalTemario;
+body.dividida #contenedorSecciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+    padding: 0 12px;
+}
 
-document.getElementById("botonEliminarTemario").onclick = function () {
-    if (asignaturaTemarioEditandoId === null) return;
-    if (eliminarAsignaturaTemario(asignaturaTemarioEditandoId)) {
-        cerrarModalTemario();
-    }
-};
+body.dividida main {
+    max-width: none;
+    margin: 20px 0;
+    padding: 0;
+    min-width: 0;
+}
 
-nombreTemarioInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        confirmarModalTemario();
-    }
-});
+body.dividida .calendario-semana {
+    overflow: auto;
+    grid-template-columns: 50px repeat(7, minmax(105px, 1fr));
+    padding: 0 8px;
+}
 
-aplicarSecciones();
+body.dividida .calendario-mes {
+    padding: 0 6px;
+    font-size: 11px;
+}
+
+body.dividida .cabecera-mes {
+    padding: 8px 2px;
+    font-size: 11px;
+}
+
+body.dividida .dia-mes {
+    min-height: 90px;
+    padding: 4px;
+}
+
+body.dividida .evento-mes {
+    font-size: 10px;
+    padding: 3px 4px;
+}
+
+body.dividida #tablero {
+    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(190px, 1fr));
+}
 
 /* =========================
-   INICIO
+   TABLET Y MÓVIL
    ========================= */
 
-escucharDatos();
-escucharTablero();
+@media (max-width: 900px) {
+    .calendario-semana {
+        overflow-x: auto;
+        grid-template-columns: 50px repeat(7, minmax(130px, 1fr));
+        padding: 0 8px;
+    }
+
+    #tablero {
+        overflow-x: auto;
+        grid-template-columns: repeat(4, minmax(230px, 1fr));
+    }
+
+    /* En pantallas estrechas las dos pestañas se apilan */
+    body.dividida #contenedorSecciones {
+        grid-template-columns: 1fr;
+        padding: 0 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    h1 { font-size: 18px; }
+    header { padding: 12px 8px; }
+    button { padding: 9px 12px; font-size: 13px; }
+    .btn-dividir { padding: 5px 9px; font-size: 12px; top: 8px; right: 8px; }
+    main { margin: 12px auto; padding: 0 8px; }
+    .barra-superior { gap: 10px; }
+    .barra-superior h2 { font-size: 15px; min-width: 0; flex: 1; }
+    .boton-añadir { max-width: 100%; margin: 14px auto; }
+    .calendario-mes { font-size: 11px; padding: 0 6px; }
+    .dia-mes { min-height: 70px; padding: 4px; }
+    .evento-mes { font-size: 10px; padding: 3px 4px; }
+    .modal-contenido { padding: 16px; border-radius: 12px; }
+    .acciones-modal { justify-content: stretch; }
+    .acciones-modal button { flex: 1; }
+
+    .lista-barra-superior {
+        margin: 14px auto;
+    }
+
+    .tema-estado {
+        max-width: 110px;
+    }
+}
+
+@media (max-width: 500px) {
+    .botones-arrastre { flex-direction: column; }
+}
