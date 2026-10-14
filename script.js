@@ -1422,9 +1422,7 @@ function normalizarLista(datos) {
             temas: aArray(asignatura.temas).map(function (t) {
                 return {
                     ...t,
-                    progreso: typeof t.progreso === "number"
-                        ? t.progreso
-                        : (t.estado === "terminado" ? 100 : 0)
+                    progreso: typeof t.progreso === "number" ? t.progreso : 0
                 };
             }),
             examenes: aArray(asignatura.examenes)
@@ -1502,6 +1500,24 @@ function crearLista(config) {
 
     let cerradas = leerLocal(config.claveCerradas, []);
     if (!Array.isArray(cerradas)) cerradas = [];
+
+    // Calificaciones: por defecto plegadas; aquí se guardan las asignaturas con el desplegable abierto
+    const claveCalificaciones = config.claveCerradas + "Calificaciones";
+    let calificacionesAbiertas = leerLocal(claveCalificaciones, []);
+    if (!Array.isArray(calificacionesAbiertas)) calificacionesAbiertas = [];
+
+    function alternarCalificaciones(idAsignatura) {
+        const id = String(idAsignatura);
+
+        if (calificacionesAbiertas.includes(id)) {
+            calificacionesAbiertas = calificacionesAbiertas.filter(x => x !== id);
+        } else {
+            calificacionesAbiertas.push(id);
+        }
+
+        escribirLocal(claveCalificaciones, calificacionesAbiertas);
+        mostrar();
+    }
 
     /* ---------- Firebase ---------- */
 
@@ -1691,7 +1707,6 @@ function crearLista(config) {
         if (!tema) return;
 
         tema.estado = estado;
-        if (estado === "terminado") tema.progreso = 100;
         guardarYMostrar();
     }
 
@@ -1700,14 +1715,7 @@ function crearLista(config) {
         if (!tema) return;
 
         tema.progreso = valor;
-
-        if (valor >= 100) {
-            tema.estado = "terminado";
-        } else if (tema.estado === "terminado") {
-            tema.estado = "leido";
-        }
-
-        guardarYMostrar();
+        guardar();
     }
 
     function eliminarTema(idAsignatura, idTema) {
@@ -1985,23 +1993,40 @@ function crearLista(config) {
         const bloque = document.createElement("div");
         bloque.className = "lista-examenes";
 
+        const abierto = calificacionesAbiertas.includes(String(asignatura.id));
+
         const cabecera = document.createElement("div");
         cabecera.className = "lista-subtitulo";
+        cabecera.title = abierto ? "Plegar" : "Desplegar";
+        cabecera.addEventListener("click", function () {
+            alternarCalificaciones(asignatura.id);
+        });
+
+        const flecha = document.createElement("span");
+        flecha.className = "lista-flecha";
+        flecha.textContent = abierto ? "▾" : "▸";
+        cabecera.appendChild(flecha);
 
         const titulo = document.createElement("span");
+        titulo.className = "lista-subtitulo-texto";
         titulo.textContent = "Calificaciones";
         cabecera.appendChild(titulo);
 
         const conNota = examenes.filter(x => typeof x.nota === "number");
+        const resumenEl = document.createElement("span");
+        resumenEl.className = "lista-media";
+
         if (conNota.length > 0) {
             const media = conNota.reduce((suma, x) => suma + x.nota, 0) / conNota.length;
-            const mediaEl = document.createElement("span");
-            mediaEl.className = "lista-media";
-            mediaEl.textContent = "Media: " + formatearNota(Math.round(media * 100) / 100);
-            cabecera.appendChild(mediaEl);
+            resumenEl.textContent = "Media: " + formatearNota(Math.round(media * 100) / 100);
+        } else {
+            resumenEl.textContent = "Sin notas";
         }
+        cabecera.appendChild(resumenEl);
 
         bloque.appendChild(cabecera);
+
+        if (!abierto) return bloque;
 
         examenes.forEach(function (examen) {
             const fila = document.createElement("div");
