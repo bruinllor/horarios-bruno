@@ -840,11 +840,22 @@ body.dividida #temario {
 
 .lista-subtitulo {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
     font-size: 13px;
     font-weight: bold;
     color: var(--texto-suave);
+    cursor: pointer;
+    user-select: none;
+}
+
+.lista-subtitulo:hover {
+    color: var(--texto);
+}
+
+.lista-subtitulo-texto {
+    flex: 1;
 }
 
 .lista-media {
