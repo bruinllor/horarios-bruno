@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="icono.png?v=1">
 
     <style>html { background: #0f1115; }</style>
-    <link rel="stylesheet" href="style.css?v=90">
+    <link rel="stylesheet" href="style.css?v=85">
 </head>
 <body>
     <header>
@@ -23,9 +23,6 @@
                 </button>
                 <button id="seccionTemarioBtn">
                     Lista
-                </button>
-                <button id="seccionNotasBtn">
-                    Notas
                 </button>
                 <button id="btnDividir" class="btn-dividir">
                     ◫ Dividir pantalla
@@ -95,20 +92,9 @@
 
     <main id="seccionTemario" class="seccion-oculta">
         <p class="instruccion-arrastre">
-            Dentro de cada asignatura añade sus temas y cambia el estado de cada uno.
+            Dentro de cada asignatura añade sus temas, cambia su estado y progreso, y apunta las calificaciones de los exámenes.
         </p>
         <div id="temario"></div>
-    </main>
-
-    <!-- =========================
-         SECCIÓN NOTAS (igual que Lista, con sus propios datos)
-         ========================= -->
-
-    <main id="seccionNotas" class="seccion-oculta">
-        <p class="instruccion-arrastre">
-            Dentro de cada asignatura añade sus temas y cambia el estado de cada uno.
-        </p>
-        <div id="notas"></div>
     </main>
 
     </div>
@@ -304,39 +290,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDITAR ASIGNATURA (NOTAS) -->
-    <div id="modalNotas" class="modal oculto">
-        <div class="modal-contenido">
-            <h2 id="tituloModalNotas">
-                Añadir asignatura
-            </h2>
-            <label for="nombreAsignaturaNotas">
-                Nombre
-            </label>
-            <input
-                type="text"
-                id="nombreAsignaturaNotas"
-                placeholder="Nombre de la asignatura"
-                maxlength="80"
-            >
-            <div class="acciones-modal">
-                <button
-                    id="botonEliminarNotas"
-                    style="display: none;">
-                    Eliminar
-                </button>
-                <button id="cancelarModalNotas">
-                    Cancelar
-                </button>
-                <button
-                    id="guardarModalNotas"
-                    class="guardar">
-                    Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="script.js?v=84"></script>
+    <script type="module" src="script.js?v=85"></script>
 </body>
 </html>
