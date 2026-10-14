@@ -918,77 +918,14 @@ document.getElementById("mesSiguiente").onclick = function () {
 };
 
 /* =========================================================
-   PESTAÑA "NOTAS": se crea copiando la de "Lista"
+   LISTA (TEMARIO)
    ========================================================= */
 
 let listaTemario = null;
-let listaNotas = null;
 
 function mostrarTemario() {
     if (listaTemario) listaTemario.mostrar();
 }
-
-function mostrarNotas() {
-    if (listaNotas) listaNotas.mostrar();
-}
-
-(function crearPestanaNotas() {
-    const botonLista = document.getElementById("seccionTemarioBtn");
-    const panelLista = document.getElementById("seccionTemario");
-
-    if (!botonLista || !panelLista || document.getElementById("seccionNotas")) return;
-
-    // Quita cualquier campo suelto "Nueva asignatura" que hubiera ya en la página
-    document.querySelectorAll('input[placeholder^="Nueva asignatura"]').forEach(function (campo) {
-        const padre = campo.parentElement;
-        campo.remove();
-        if (padre && padre.children.length === 0 && padre !== document.body && padre !== panelLista) {
-            padre.remove();
-        }
-    });
-
-    // Botón de la pestaña
-    const botonNotas = botonLista.cloneNode(true);
-    botonNotas.id = "seccionNotasBtn";
-    botonNotas.textContent = "Notas";
-    botonNotas.classList.remove("active");
-    botonLista.after(botonNotas);
-
-    // Panel de la pestaña (copia del de Lista, con otros ids)
-    const panelNotas = panelLista.cloneNode(true);
-
-    const botonAnadirViejo = panelNotas.querySelector("#btnAnadirAsignaturaTemario");
-    if (botonAnadirViejo) botonAnadirViejo.remove();
-
-    const cambiosDeId = {};
-    panelNotas.querySelectorAll("[id]").forEach(function (el) {
-        const idViejo = el.id;
-        let idNuevo;
-
-        if (idViejo === "temario") {
-            idNuevo = "notas";
-        } else if (idViejo.includes("Temario")) {
-            idNuevo = idViejo.replace("Temario", "Notas");
-        } else {
-            idNuevo = idViejo + "Notas";
-        }
-
-        cambiosDeId[idViejo] = idNuevo;
-        el.id = idNuevo;
-    });
-
-    panelNotas.querySelectorAll("label[for]").forEach(function (label) {
-        const nuevo = cambiosDeId[label.getAttribute("for")];
-        if (nuevo) label.setAttribute("for", nuevo);
-    });
-
-    panelNotas.id = "seccionNotas";
-
-    const contenedorNotas = panelNotas.querySelector("#notas");
-    if (contenedorNotas) contenedorNotas.innerHTML = "";
-
-    panelLista.after(panelNotas);
-})();
 
 /* =========================================================
    CAMBIAR SECCIÓN + PANTALLA DIVIDIDA
@@ -997,8 +934,7 @@ function mostrarNotas() {
 const SECCIONES = {
     calendario: { boton: "seccionCalendarioBtn", panel: "seccionCalendario", mostrar: mostrarCalendario },
     tablero:    { boton: "seccionTableroBtn",    panel: "seccionTablero",    mostrar: mostrarTablero },
-    temario:    { boton: "seccionTemarioBtn",    panel: "seccionTemario",    mostrar: mostrarTemario },
-    notas:      { boton: "seccionNotasBtn",      panel: "seccionNotas",      mostrar: mostrarNotas }
+    temario:    { boton: "seccionTemarioBtn",    panel: "seccionTemario",    mostrar: mostrarTemario }
 };
 
 const ORDEN_SECCIONES = Object.keys(SECCIONES);
@@ -1449,7 +1385,7 @@ document.getElementById("guardarAsignatura").onclick = guardarAsignatura;
 document.getElementById("botonEliminarAsignatura").onclick = eliminarAsignatura;
 
 /* =========================================================
-   LISTAS CON TEMAS Y ESTADO (pestañas "Lista" y "Notas")
+   LISTA CON TEMAS, ESTADO, PROGRESO Y CALIFICACIONES
    ========================================================= */
 
 const ESTADOS_TEMA = [
@@ -1474,15 +1410,24 @@ function limpiarLineaTema(texto) {
 function normalizarLista(datos) {
     const lista = !datos ? [] : (Array.isArray(datos) ? datos : Object.values(datos));
 
-    return lista.filter(Boolean).map(function (asignatura) {
-        // Firebase no guarda arrays vacíos: si no hay temas, "temas" llega sin definir
-        const temasBrutos = asignatura.temas
-            ? (Array.isArray(asignatura.temas) ? asignatura.temas : Object.values(asignatura.temas))
-            : [];
+    // Firebase no guarda arrays vacíos: si no hay temas/exámenes, el campo llega sin definir
+    function aArray(x) {
+        if (!x) return [];
+        return (Array.isArray(x) ? x : Object.values(x)).filter(Boolean);
+    }
 
+    return lista.filter(Boolean).map(function (asignatura) {
         return {
             ...asignatura,
-            temas: temasBrutos.filter(Boolean)
+            temas: aArray(asignatura.temas).map(function (t) {
+                return {
+                    ...t,
+                    progreso: typeof t.progreso === "number"
+                        ? t.progreso
+                        : (t.estado === "terminado" ? 100 : 0)
+                };
+            }),
+            examenes: aArray(asignatura.examenes)
         };
     });
 }
@@ -1661,7 +1606,8 @@ function crearLista(config) {
             datos.push({
                 id: nuevoIdLista(),
                 nombre: nombre,
-                temas: []
+                temas: [],
+                examenes: []
             });
         }
 
@@ -1709,7 +1655,8 @@ function crearLista(config) {
             asignatura.temas.push({
                 id: nuevoIdLista(),
                 nombre: nombre,
-                estado: "porver"
+                estado: "porver",
+                progreso: 0
             });
         });
 
@@ -1744,6 +1691,22 @@ function crearLista(config) {
         if (!tema) return;
 
         tema.estado = estado;
+        if (estado === "terminado") tema.progreso = 100;
+        guardarYMostrar();
+    }
+
+    function cambiarProgresoTema(idAsignatura, idTema, valor) {
+        const tema = buscarTema(idAsignatura, idTema);
+        if (!tema) return;
+
+        tema.progreso = valor;
+
+        if (valor >= 100) {
+            tema.estado = "terminado";
+        } else if (tema.estado === "terminado") {
+            tema.estado = "leido";
+        }
+
         guardarYMostrar();
     }
 
@@ -1752,6 +1715,70 @@ function crearLista(config) {
         if (!asignatura || !asignatura.temas) return;
 
         asignatura.temas = asignatura.temas.filter(t => String(t.id) !== String(idTema));
+        guardarYMostrar();
+    }
+
+    /* ---------- Calificaciones de exámenes ---------- */
+
+    function leerNota(texto) {
+        const limpio = String(texto).trim().replace(",", ".");
+        if (limpio === "") return null;
+        const n = Number(limpio);
+        if (!isFinite(n) || n < 0 || n > 10) return null;
+        return n;
+    }
+
+    function formatearNota(n) {
+        return String(n).replace(".", ",");
+    }
+
+    function buscarExamen(idAsignatura, idExamen) {
+        const asignatura = buscarAsignatura(idAsignatura);
+        if (!asignatura || !asignatura.examenes) return null;
+        return asignatura.examenes.find(x => String(x.id) === String(idExamen)) || null;
+    }
+
+    function anadirExamen(idAsignatura, nombre, notaTexto) {
+        const asignatura = buscarAsignatura(idAsignatura);
+        if (!asignatura) return false;
+
+        nombre = nombre.trim();
+        const nota = leerNota(notaTexto);
+
+        if (!nombre) {
+            alert("Ponle un nombre al examen.");
+            return false;
+        }
+        if (nota === null) {
+            alert("Introduce una nota entre 0 y 10.");
+            return false;
+        }
+
+        if (!asignatura.examenes) asignatura.examenes = [];
+        asignatura.examenes.push({ id: nuevoIdLista(), nombre: nombre, nota: nota });
+
+        guardarYMostrar();
+        return true;
+    }
+
+    function renombrarExamen(idAsignatura, idExamen, nombre) {
+        const examen = buscarExamen(idAsignatura, idExamen);
+        if (!examen) return;
+        examen.nombre = nombre;
+        guardar();
+    }
+
+    function cambiarNotaExamen(idAsignatura, idExamen, nota) {
+        const examen = buscarExamen(idAsignatura, idExamen);
+        if (!examen) return;
+        examen.nota = nota;
+        guardarYMostrar();
+    }
+
+    function eliminarExamen(idAsignatura, idExamen) {
+        const asignatura = buscarAsignatura(idAsignatura);
+        if (!asignatura || !asignatura.examenes) return;
+        asignatura.examenes = asignatura.examenes.filter(x => String(x.id) !== String(idExamen));
         guardarYMostrar();
     }
 
@@ -1875,6 +1902,10 @@ function crearLista(config) {
 
     function crearFilaTema(idAsignatura, tema) {
         const estado = ESTADOS_TEMA.some(e => e.id === tema.estado) ? tema.estado : "porver";
+        const progreso = typeof tema.progreso === "number" ? tema.progreso : 0;
+
+        const item = document.createElement("div");
+        item.className = "tema-item";
 
         const fila = document.createElement("div");
         fila.className = "tema-fila";
@@ -1916,7 +1947,151 @@ function crearLista(config) {
         fila.appendChild(selector);
         fila.appendChild(borrar);
 
-        return fila;
+        /* Barra de progreso movible (0-100%) */
+        const filaProgreso = document.createElement("div");
+        filaProgreso.className = "tema-progreso";
+
+        const deslizador = document.createElement("input");
+        deslizador.type = "range";
+        deslizador.min = 0;
+        deslizador.max = 100;
+        deslizador.step = 1;
+        deslizador.value = progreso;
+
+        const etiqueta = document.createElement("span");
+        etiqueta.className = "tema-progreso-valor";
+        etiqueta.textContent = progreso + "%";
+
+        deslizador.addEventListener("input", function () {
+            etiqueta.textContent = deslizador.value + "%";
+        });
+
+        deslizador.addEventListener("change", function () {
+            cambiarProgresoTema(idAsignatura, tema.id, Number(deslizador.value));
+        });
+
+        filaProgreso.appendChild(deslizador);
+        filaProgreso.appendChild(etiqueta);
+
+        item.appendChild(fila);
+        item.appendChild(filaProgreso);
+
+        return item;
+    }
+
+    function crearBloqueCalificaciones(asignatura) {
+        const examenes = asignatura.examenes || [];
+
+        const bloque = document.createElement("div");
+        bloque.className = "lista-examenes";
+
+        const cabecera = document.createElement("div");
+        cabecera.className = "lista-subtitulo";
+
+        const titulo = document.createElement("span");
+        titulo.textContent = "Calificaciones";
+        cabecera.appendChild(titulo);
+
+        const conNota = examenes.filter(x => typeof x.nota === "number");
+        if (conNota.length > 0) {
+            const media = conNota.reduce((suma, x) => suma + x.nota, 0) / conNota.length;
+            const mediaEl = document.createElement("span");
+            mediaEl.className = "lista-media";
+            mediaEl.textContent = "Media: " + formatearNota(Math.round(media * 100) / 100);
+            cabecera.appendChild(mediaEl);
+        }
+
+        bloque.appendChild(cabecera);
+
+        examenes.forEach(function (examen) {
+            const fila = document.createElement("div");
+            fila.className = "examen-fila";
+
+            const nombreEx = document.createElement("input");
+            nombreEx.type = "text";
+            nombreEx.className = "examen-nombre";
+            nombreEx.value = examen.nombre;
+            nombreEx.maxLength = 80;
+            conectarEdicionTexto(nombreEx, function (nuevo) {
+                renombrarExamen(asignatura.id, examen.id, nuevo);
+            });
+
+            const notaEx = document.createElement("input");
+            notaEx.type = "text";
+            notaEx.inputMode = "decimal";
+            notaEx.className = "examen-nota";
+            notaEx.value = formatearNota(examen.nota);
+            notaEx.maxLength = 5;
+            notaEx.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") notaEx.blur();
+            });
+            notaEx.addEventListener("change", function () {
+                const n = leerNota(notaEx.value);
+                if (n === null) {
+                    alert("Introduce una nota entre 0 y 10.");
+                    notaEx.value = formatearNota(examen.nota);
+                    return;
+                }
+                cambiarNotaExamen(asignatura.id, examen.id, n);
+            });
+
+            const borrarEx = document.createElement("button");
+            borrarEx.className = "tema-borrar";
+            borrarEx.textContent = "✕";
+            borrarEx.title = "Eliminar examen";
+            borrarEx.addEventListener("click", function () {
+                eliminarExamen(asignatura.id, examen.id);
+            });
+
+            fila.appendChild(nombreEx);
+            fila.appendChild(notaEx);
+            fila.appendChild(borrarEx);
+            bloque.appendChild(fila);
+        });
+
+        /* Fila para añadir un examen nuevo */
+        const filaNueva = document.createElement("div");
+        filaNueva.className = "examen-fila";
+
+        const campoNombre = document.createElement("input");
+        campoNombre.type = "text";
+        campoNombre.className = "examen-nombre";
+        campoNombre.placeholder = "Examen (ej. Parcial 1)";
+        campoNombre.maxLength = 80;
+
+        const campoNota = document.createElement("input");
+        campoNota.type = "text";
+        campoNota.inputMode = "decimal";
+        campoNota.className = "examen-nota";
+        campoNota.placeholder = "Nota";
+        campoNota.maxLength = 5;
+
+        const botonNuevo = document.createElement("button");
+        botonNuevo.className = "lista-btn-add";
+        botonNuevo.textContent = "+";
+        botonNuevo.title = "Añadir calificación";
+
+        function confirmarNuevoExamen() {
+            anadirExamen(asignatura.id, campoNombre.value, campoNota.value);
+        }
+
+        [campoNombre, campoNota].forEach(function (campo) {
+            campo.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    confirmarNuevoExamen();
+                }
+            });
+        });
+
+        botonNuevo.addEventListener("click", confirmarNuevoExamen);
+
+        filaNueva.appendChild(campoNombre);
+        filaNueva.appendChild(campoNota);
+        filaNueva.appendChild(botonNuevo);
+        bloque.appendChild(filaNueva);
+
+        return bloque;
     }
 
     function crearTarjeta(asignatura) {
@@ -1925,10 +2100,12 @@ function crearLista(config) {
         const terminados = temas.filter(t => t.estado === "terminado").length;
         const porcentaje = total ? Math.round((terminados / total) * 100) : 0;
         const cerrada = cerradas.includes(String(asignatura.id));
+        const completada = total > 0 && terminados === total;
 
         const tarjeta = document.createElement("div");
         tarjeta.className = "columna-tablero lista-asignatura";
         tarjeta.dataset.id = asignatura.id;
+        if (completada) tarjeta.classList.add("lista-completada");
 
         /* --- Cabecera (clic = plegar/desplegar) --- */
         const cabecera = document.createElement("div");
@@ -1986,7 +2163,7 @@ function crearLista(config) {
 
         if (cerrada) return tarjeta;
 
-        /* --- Cuerpo: temas + añadir --- */
+        /* --- Cuerpo: temas + añadir + calificaciones --- */
         const cuerpo = document.createElement("div");
         cuerpo.className = "lista-cuerpo";
 
@@ -2046,6 +2223,8 @@ function crearLista(config) {
         filaNuevo.appendChild(botonNuevo);
         cuerpo.appendChild(filaNuevo);
 
+        cuerpo.appendChild(crearBloqueCalificaciones(asignatura));
+
         tarjeta.appendChild(cuerpo);
 
         return tarjeta;
@@ -2098,7 +2277,8 @@ function crearLista(config) {
         datos.push({
             id: nuevoIdLista(),
             nombre: nombre,
-            temas: []
+            temas: [],
+            examenes: []
         });
 
         campoNuevaAsignatura.value = "";
@@ -2154,21 +2334,6 @@ listaTemario = crearLista({
         eliminar: "botonEliminarTemario",
         cancelar: "cancelarModalTemario",
         guardar: "guardarModalTemario"
-    }
-});
-
-listaNotas = crearLista({
-    nodo: "notas",
-    panelId: "seccionNotas",
-    contenedorId: "notas",
-    claveCerradas: "notasCerradas",
-    modal: {
-        modal: "modalNotas",
-        titulo: "tituloModalNotas",
-        nombre: "nombreAsignaturaNotas",
-        eliminar: "botonEliminarNotas",
-        cancelar: "cancelarModalNotas",
-        guardar: "guardarModalNotas"
     }
 });
 
